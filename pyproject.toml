@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools >= 44", "wheel >= 0.30", "setuptools_scm[toml]>=6"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+line_length = 120
+profile = "black"
+known_first_party = ["pyproject_api", "tests"]
+
+[tool.setuptools_scm]
+write_to = "src/pyproject_api/_version.py"
+
+[tool.coverage.run]
+plugins = ["covdefaults"]
+
+[tool.coverage.html]
+show_contexts = true
+skip_covered = true
+
+[tool.coverage.paths]
+source = [
+    ".",
+    ".tox/*/lib/*/site-packages/",
+    '.tox\\*\\Lib\\site-packages\\',
+]
