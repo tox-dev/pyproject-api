@@ -1,5 +1,9 @@
 # [`pyproject-api`](https://pyproject-api.readthedocs.io/en/latest/)
 
+[![PyPI](https://img.shields.io/pypi/v/pyproject-api?style=flat-square)](https://pypi.org/project/pyproject-api/)
+[![Supported Python
+versions](https://img.shields.io/pypi/pyversions/pyproject-api.svg)](https://pypi.org/project/pyproject-api/)
+[![Downloads](https://pepy.tech/badge/pyproject-api/month)](https://pepy.tech/project/pyproject-api/month)
 [![check](https://github.com/tox-dev/pyproject-api/actions/workflows/check.yml/badge.svg)](https://github.com/tox-dev/pyproject-api/actions/workflows/check.yml)
 [![codecov](https://codecov.io/gh/tox-dev/pyproject-api/branch/rewrite/graph/badge.svg)](https://codecov.io/gh/tox-dev/pyproject-api/branch/main)
 [![Code style:
