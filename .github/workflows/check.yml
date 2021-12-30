@@ -10,101 +10,101 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pre_commit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-      - uses: pre-commit/action@v2.0.0
-
   test:
     name: test ${{ matrix.py }} - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         py:
-          - "3.10.0"
+          - "3.10"
           - "3.9"
           - "3.8"
           - "3.7"
-          - "3.6"
         os:
-          - Windows
-          - MacOs
-          - Ubuntu
+          - ubuntu-20.04
+          - windows-2022
+          - macos-10.15
+
     steps:
+      - name: Setup python for tox
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+      - name: Install tox
+        run: python -m pip install tox
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Setup python for test ${{ matrix.py }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.py }}
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Install tox
-        run: python -m pip install tox>=4.0.0a9
+      - name: Pick environment to run
+        run: |
+          import os
+          import sys
+          from pathlib import Path
+          env = f"TOXENV=py{sys.version_info[0]}{sys.version_info[1]}\n"
+          print("Picked:\n{}for{}".format(env, sys.version))
+          Path(os.environ["GITHUB_ENV"]).write_text(env)
+        shell: python
       - name: Setup test suite
-        run: python -m tox -e py -vv --notest
+        run: tox -vv --notest
       - name: Run test suite
-        run: python -m tox -e py --skip-pkg-install
+        run: tox --skip-pkg-install
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"
           CI_RUN: "yes"
-          DIFF_AGAINST: HEAD
-      - uses: codecov/codecov-action@v1
-        with:
-          file: ./.tox/4/coverage.py.xml
-          flags: tests
-          name: ${{ matrix.py }} - ${{ matrix.os }}
 
   check:
-    name: check ${{ matrix.tox_env }} - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}-latest
+    name: tox env ${{ matrix.tox_env }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - Windows
-          - Ubuntu
         tox_env:
-          - type
           - dev
           - docs
           - pkg_meta
+          - type
+        os:
+          - ubuntu-20.04
+          - windows-2022
         exclude:
-          - { os: windows, tox_env: pkg_meta }
+          - { os: windows-2022, tox_env: pkg_meta }
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Setup Python 3.10.0
+      - name: Setup Python "3.10"
         uses: actions/setup-python@v2
         with:
-          python-version: "3.10.0"
+          python-version: "3.10"
       - name: Install tox
-        run: python -m pip install tox>=4.0.0a9
-      - name: Run check for ${{ matrix.tox_env }}
-        run: python -m tox -e ${{ matrix.tox_env }}
-        env:
-          UPGRADE_ADVISORY: "yes"
+        run: python -m pip install tox
+      - name: Setup test suite
+        run: tox -vv --notest -e ${{ matrix.tox_env }}
+      - name: Run test suite
+        run: tox --skip-pkg-install -e ${{ matrix.tox_env }}
 
   publish:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-    needs: [ check, test, pre_commit ]
-    runs-on: ubuntu-latest
+    needs: [check, test]
+    runs-on: ubuntu-20.04
     steps:
       - name: Setup python to build package
         uses: actions/setup-python@v2
         with:
-          python-version: "3.10.0"
+          python-version: "3.10"
       - name: Install build
         run: python -m pip install build
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Build package
-        run: pyproject-build -s -w . -o dist
-      - name: Publish to PyPI
+      - name: Build sdist and wheel
+        run: python -m build -s -w . -o dist
+      - name: Publish to PyPi
         uses: pypa/gh-action-pypi-publish@master
         with:
           skip_existing: true

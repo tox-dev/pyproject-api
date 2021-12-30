@@ -1,11 +1,13 @@
 """Build frontend for PEP-517"""
+from __future__ import annotations
+
 import json
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import sleep
-from typing import Any, Dict, Iterator, List, NamedTuple, NoReturn, Optional, Tuple, cast
+from typing import Any, Dict, Iterator, List, NamedTuple, NoReturn, Optional, cast
 from zipfile import ZipFile
 
 import tomli
@@ -25,7 +27,7 @@ class CmdStatus(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def out_err(self) -> Tuple[str, str]:
+    def out_err(self) -> tuple[str, str]:
         """:return: standard output and standard error text"""
         raise NotImplementedError
 
@@ -34,7 +36,7 @@ class RequiresBuildSdistResult(NamedTuple):
     """Information collected while acquiring the source distribution build dependencies"""
 
     #: wheel build dependencies
-    requires: Tuple[Requirement, ...]
+    requires: tuple[Requirement, ...]
     #: backend standard output while acquiring the source distribution build dependencies
     out: str
     #: backend standard output while acquiring the source distribution build dependencies
@@ -45,7 +47,7 @@ class RequiresBuildWheelResult(NamedTuple):
     """Information collected while acquiring the wheel build dependencies"""
 
     #: wheel build dependencies
-    requires: Tuple[Requirement, ...]
+    requires: tuple[Requirement, ...]
     #: backend standard output while acquiring the wheel build dependencies
     out: str
     #: backend standard error while acquiring the wheel build dependencies
@@ -88,7 +90,7 @@ class WheelResult(NamedTuple):
 class BackendFailed(RuntimeError):
     """An error of the build backend."""
 
-    def __init__(self, result: Dict[str, Any], out: str, err: str) -> None:
+    def __init__(self, result: dict[str, Any], out: str, err: str) -> None:
         super().__init__()
         #: standard output collected while running the command
         self.out = out
@@ -123,15 +125,15 @@ class Frontend(ABC):
     #: backend key when the ``pyproject.toml`` does not specify it
     LEGACY_BUILD_BACKEND: str = "setuptools.build_meta:__legacy__"
     #: backend requirements when the ``pyproject.toml`` does not specify it
-    LEGACY_REQUIRES: Tuple[Requirement, ...] = (Requirement("setuptools >= 40.8.0"), Requirement("wheel"))
+    LEGACY_REQUIRES: tuple[Requirement, ...] = (Requirement("setuptools >= 40.8.0"), Requirement("wheel"))
 
     def __init__(
         self,
         root: Path,
-        backend_paths: Tuple[Path, ...],
+        backend_paths: tuple[Path, ...],
         backend_module: str,
-        backend_obj: Optional[str],
-        requires: Tuple[Requirement, ...],
+        backend_obj: str | None,
+        requires: tuple[Requirement, ...],
         reuse_backend: bool = True,
     ) -> None:
         """
@@ -148,13 +150,13 @@ class Frontend(ABC):
         self._backend_paths = backend_paths
         self._backend_module = backend_module
         self._backend_obj = backend_obj
-        self.requires: Tuple[Requirement, ...] = requires
+        self.requires: tuple[Requirement, ...] = requires
         self._reuse_backend = reuse_backend
 
     @classmethod
     def create_args_from_folder(
         cls, folder: Path
-    ) -> Tuple[Path, Tuple[Path, ...], str, Optional[str], Tuple[Requirement, ...], bool]:
+    ) -> tuple[Path, tuple[Path, ...], str, str | None, tuple[Requirement, ...], bool]:
         """
         Frontend creation arguments from a python project folder (thould have a ``pypyproject.toml`` file per PEP-518).
 
@@ -173,11 +175,11 @@ class Frontend(ABC):
                 py_project = tomli.load(file_handler)
             build_system = py_project.get("build-system", {})
             if "backend-path" in build_system:
-                backend_paths: Tuple[Path, ...] = tuple(folder / p for p in build_system["backend-path"])
+                backend_paths: tuple[Path, ...] = tuple(folder / p for p in build_system["backend-path"])
             else:
                 backend_paths = ()
             if "requires" in build_system:
-                requires: Tuple[Requirement, ...] = tuple(Requirement(r) for r in build_system.get("requires"))
+                requires: tuple[Requirement, ...] = tuple(Requirement(r) for r in build_system.get("requires"))
             else:
                 requires = cls.LEGACY_REQUIRES
             build_backend = build_system.get("build-backend", cls.LEGACY_BUILD_BACKEND)
@@ -187,7 +189,7 @@ class Frontend(ABC):
             build_backend = cls.LEGACY_BUILD_BACKEND
         paths = build_backend.split(":")
         backend_module: str = paths[0]
-        backend_obj: Optional[str] = paths[1] if len(paths) > 1 else None
+        backend_obj: str | None = paths[1] if len(paths) > 1 else None
         return folder, backend_paths, backend_module, backend_obj, requires, True
 
     @property
@@ -196,16 +198,14 @@ class Frontend(ABC):
         return f"{self._backend_module}{f':{self._backend_obj}' if self._backend_obj else ''}"
 
     @property
-    def backend_args(self) -> List[str]:
+    def backend_args(self) -> list[str]:
         """:return: startup arguments for a backend"""
-        result: List[str] = [str(_HERE / "_backend.py"), str(self._reuse_backend), self._backend_module]
+        result: list[str] = [str(_HERE / "_backend.py"), str(self._reuse_backend), self._backend_module]
         if self._backend_obj:
             result.append(self._backend_obj)
         return result
 
-    def get_requires_for_build_sdist(
-        self, config_settings: Optional[ConfigSettings] = None
-    ) -> RequiresBuildSdistResult:
+    def get_requires_for_build_sdist(self, config_settings: ConfigSettings | None = None) -> RequiresBuildSdistResult:
         """
         Get build requirements for a source distribution (per PEP-517).
 
@@ -220,9 +220,7 @@ class Frontend(ABC):
             self._unexpected_response("get_requires_for_build_sdist", result, "list of string", out, err)
         return RequiresBuildSdistResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
 
-    def get_requires_for_build_wheel(
-        self, config_settings: Optional[ConfigSettings] = None
-    ) -> RequiresBuildWheelResult:
+    def get_requires_for_build_wheel(self, config_settings: ConfigSettings | None = None) -> RequiresBuildWheelResult:
         """
         Get build requirements for a wheel (per PEP-517).
 
@@ -238,7 +236,7 @@ class Frontend(ABC):
         return RequiresBuildWheelResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
 
     def prepare_metadata_for_build_wheel(
-        self, metadata_directory: Path, config_settings: Optional[ConfigSettings] = None
+        self, metadata_directory: Path, config_settings: ConfigSettings | None = None
     ) -> MetadataForBuildWheelResult:
         """
         Build wheel metadata (per PEP-517).
@@ -266,7 +264,7 @@ class Frontend(ABC):
         result = metadata_directory / basename
         return MetadataForBuildWheelResult(result, out, err)
 
-    def build_sdist(self, sdist_directory: Path, config_settings: Optional[ConfigSettings] = None) -> SdistResult:
+    def build_sdist(self, sdist_directory: Path, config_settings: ConfigSettings | None = None) -> SdistResult:
         """
         Build a source distribution (per PEP-517).
 
@@ -287,8 +285,8 @@ class Frontend(ABC):
     def build_wheel(
         self,
         wheel_directory: Path,
-        config_settings: Optional[ConfigSettings] = None,
-        metadata_directory: Optional[Path] = None,
+        config_settings: ConfigSettings | None = None,
+        metadata_directory: Path | None = None,
     ) -> WheelResult:
         """
         Build a source distribution (per PEP-517).
@@ -314,8 +312,8 @@ class Frontend(ABC):
         raise BackendFailed({"code": None, "exc_type": TypeError.__name__, "exc_msg": msg}, out, err)
 
     def _metadata_from_built_wheel(
-        self, config_settings: Optional[ConfigSettings], metadata_directory: Optional[Path]
-    ) -> Tuple[str, str, str]:
+        self, config_settings: ConfigSettings | None, metadata_directory: Path | None
+    ) -> tuple[str, str, str]:
         with self._wheel_directory() as wheel_directory:
             wheel_result = self.build_wheel(
                 wheel_directory=wheel_directory,
@@ -343,7 +341,7 @@ class Frontend(ABC):
         with TemporaryDirectory() as wheel_directory:
             yield Path(wheel_directory)
 
-    def _send(self, cmd: str, **kwargs: Any) -> Tuple[Any, str, str]:
+    def _send(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
         with NamedTemporaryFile(prefix=f"pep517_{cmd}-") as result_file_marker:
             result_file = Path(result_file_marker.name).with_suffix(".json")
             msg = json.dumps(

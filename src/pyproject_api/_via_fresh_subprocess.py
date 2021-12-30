@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import os
 import sys
 from contextlib import contextmanager
 from pathlib import Path
 from subprocess import PIPE, Popen
 from threading import Thread
-from typing import IO, Any, Iterator, Optional, Tuple, cast
+from typing import IO, Any, Iterator, Tuple, cast
 
 from packaging.requirements import Requirement
 
@@ -12,10 +14,10 @@ from ._frontend import CmdStatus, Frontend
 
 
 class SubprocessCmdStatus(CmdStatus, Thread):
-    def __init__(self, process: "Popen[str]") -> None:
+    def __init__(self, process: Popen[str]) -> None:
         super().__init__()
         self.process = process
-        self._out_err: Optional[Tuple[str, str]] = None
+        self._out_err: tuple[str, str] | None = None
         self.start()
 
     def run(self) -> None:
@@ -25,7 +27,7 @@ class SubprocessCmdStatus(CmdStatus, Thread):
     def done(self) -> bool:
         return self.process.returncode is not None
 
-    def out_err(self) -> Tuple[str, str]:
+    def out_err(self) -> tuple[str, str]:
         return cast(Tuple[str, str], self._out_err)
 
 
@@ -35,10 +37,10 @@ class SubprocessFrontend(Frontend):
     def __init__(
         self,
         root: Path,
-        backend_paths: Tuple[Path, ...],
+        backend_paths: tuple[Path, ...],
         backend_module: str,
-        backend_obj: Optional[str],
-        requires: Tuple[Requirement, ...],
+        backend_obj: str | None,
+        requires: tuple[Requirement, ...],
     ):
         """
         :param root: the root path to the built project
@@ -67,7 +69,7 @@ class SubprocessFrontend(Frontend):
         cast(IO[str], process.stdin).write(f"{os.linesep}{msg}{os.linesep}")
         yield SubprocessCmdStatus(process)
 
-    def send_cmd(self, cmd: str, **kwargs: Any) -> Tuple[Any, str, str]:
+    def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
         """
         Send a command to the backend.
 
