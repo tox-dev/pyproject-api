@@ -373,5 +373,5 @@ class Frontend(ABC):
 
     @abstractmethod
     @contextmanager
-    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[CmdStatus]:
+    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[CmdStatus]:  # noqa: U100
         raise NotImplementedError
