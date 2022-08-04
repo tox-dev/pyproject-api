@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         py:
-          - "3.11.0-beta.4"
+          - "3.11.0-beta.5"
           - "3.10"
           - "3.9"
           - "3.8"
@@ -43,11 +43,9 @@ jobs:
           python-version: ${{ matrix.py }}
       - name: Pick environment to run
         run: |
-          import os
-          import sys
-          from pathlib import Path
-          env = f"TOXENV=py{sys.version_info[0]}{sys.version_info[1]}\n"
-          print("Picked:\n{}for{}".format(env, sys.version))
+          import os; import sys; from pathlib import Path
+          env = f"TOXENV=py3{sys.version_info[1]}\n"
+          print(f"Picked:\n{env}for{sys.version}")
           Path(os.environ["GITHUB_ENV"]).write_text(env)
         shell: python
       - name: Setup test suite
