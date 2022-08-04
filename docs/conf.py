@@ -28,9 +28,9 @@ autodoc_default_options = {"members": True, "member-order": "bysource", "undoc-m
 inheritance_alias = {}
 
 extlinks = {
-    "issue": ("https://github.com/tox-dev/pyproject-api/issues/%s", "#"),
-    "pull": ("https://github.com/tox-dev/pyproject-api/pull/%s", "PR #"),
-    "user": ("https://github.com/%s", "@"),
+    "issue": ("https://github.com/tox-dev/pyproject-api/issues/%s", "#%s"),
+    "pull": ("https://github.com/tox-dev/pyproject-api/pull/%s", "PR #%s"),
+    "user": ("https://github.com/%s", "@%s"),
 }
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
