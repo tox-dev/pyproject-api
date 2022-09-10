@@ -59,6 +59,17 @@ class RequiresBuildWheelResult(NamedTuple):
     err: str
 
 
+class RequiresBuildEditableResult(NamedTuple):
+    """Information collected while acquiring the wheel build dependencies"""
+
+    #: editable wheel build dependencies
+    requires: tuple[Requirement, ...]
+    #: backend standard output while acquiring the editable wheel build dependencies
+    out: str
+    #: backend standard error while acquiring the editable wheel build dependencies
+    err: str
+
+
 class MetadataForBuildWheelResult(NamedTuple):
     """Information collected while acquiring the wheel metadata"""
 
@@ -67,6 +78,17 @@ class MetadataForBuildWheelResult(NamedTuple):
     #: backend standard output while generating the wheel metadata
     out: str
     #: backend standard output while generating the wheel metadata
+    err: str
+
+
+class MetadataForBuildEditableResult(NamedTuple):
+    """Information collected while acquiring the editable metadata"""
+
+    #: path to the wheel metadata
+    metadata: Path
+    #: backend standard output while generating the editable wheel metadata
+    out: str
+    #: backend standard output while generating the editable wheel metadata
     err: str
 
 
@@ -83,6 +105,17 @@ class SdistResult(NamedTuple):
 
 class WheelResult(NamedTuple):
     """Information collected while building a wheel"""
+
+    #: path to the built wheel artifact
+    wheel: Path
+    #: backend standard output while building the wheel
+    out: str
+    #: backend standard error while building the wheel
+    err: str
+
+
+class EditableResult(NamedTuple):
+    """Information collected while building an editable wheel"""
 
     #: path to the built wheel artifact
     wheel: Path
@@ -240,6 +273,23 @@ class Frontend(ABC):
             self._unexpected_response("get_requires_for_build_wheel", result, "list of string", out, err)
         return RequiresBuildWheelResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
 
+    def get_requires_for_build_editable(
+        self, config_settings: ConfigSettings | None = None
+    ) -> RequiresBuildEditableResult:
+        """
+        Get build requirements for an editable wheel build (per PEP-660).
+
+        :param config_settings: run arguments
+        :return: outcome
+        """
+        try:
+            result, out, err = self._send(cmd="get_requires_for_build_editable", config_settings=config_settings)
+        except BackendFailed as exc:
+            result, out, err = [], exc.out, exc.err
+        if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
+            self._unexpected_response("get_requires_for_build_editable", result, "list of string", out, err)
+        return RequiresBuildEditableResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
+
     def prepare_metadata_for_build_wheel(
         self, metadata_directory: Path, config_settings: ConfigSettings | None = None
     ) -> MetadataForBuildWheelResult:
@@ -250,11 +300,7 @@ class Frontend(ABC):
         :param config_settings: build arguments
         :return: metadata generation result
         """
-        if metadata_directory == self._root:
-            raise RuntimeError(f"the project root and the metadata directory can't be the same {self._root}")
-        if metadata_directory.exists():  # start with fresh
-            ensure_empty_dir(metadata_directory)
-        metadata_directory.mkdir(parents=True, exist_ok=True)
+        self._check_metadata_dir(metadata_directory)
         try:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_wheel",
@@ -263,11 +309,43 @@ class Frontend(ABC):
             )
         except BackendFailed:
             # if backend does not provide it acquire it from the wheel
-            basename, err, out = self._metadata_from_built_wheel(config_settings, metadata_directory)
+            basename, err, out = self._metadata_from_built_wheel(config_settings, metadata_directory, "build_wheel")
         if not isinstance(basename, str):
             self._unexpected_response("prepare_metadata_for_build_wheel", basename, str, out, err)
         result = metadata_directory / basename
         return MetadataForBuildWheelResult(result, out, err)
+
+    def _check_metadata_dir(self, metadata_directory: Path) -> None:
+        if metadata_directory == self._root:
+            raise RuntimeError(f"the project root and the metadata directory can't be the same {self._root}")
+        if metadata_directory.exists():  # start with fresh
+            ensure_empty_dir(metadata_directory)
+        metadata_directory.mkdir(parents=True, exist_ok=True)
+
+    def prepare_metadata_for_build_editable(
+        self, metadata_directory: Path, config_settings: ConfigSettings | None = None
+    ) -> MetadataForBuildEditableResult:
+        """
+        Build editable wheel metadata (per PEP-660).
+
+        :param metadata_directory: where to generate the metadata
+        :param config_settings: build arguments
+        :return: metadata generation result
+        """
+        self._check_metadata_dir(metadata_directory)
+        try:
+            basename, out, err = self._send(
+                cmd="prepare_metadata_for_build_editable",
+                metadata_directory=metadata_directory,
+                config_settings=config_settings,
+            )
+        except BackendFailed:
+            # if backend does not provide it acquire it from the wheel
+            basename, err, out = self._metadata_from_built_wheel(config_settings, metadata_directory, "build_editable")
+        if not isinstance(basename, str):
+            self._unexpected_response("prepare_metadata_for_build_wheel", basename, str, out, err)
+        result = metadata_directory / basename
+        return MetadataForBuildEditableResult(result, out, err)
 
     def build_sdist(self, sdist_directory: Path, config_settings: ConfigSettings | None = None) -> SdistResult:
         """
@@ -294,7 +372,7 @@ class Frontend(ABC):
         metadata_directory: Path | None = None,
     ) -> WheelResult:
         """
-        Build a source distribution (per PEP-517).
+        Build a wheel file (per PEP-517).
 
         :param wheel_directory: the folder where to build the wheel
         :param config_settings: build arguments
@@ -312,15 +390,40 @@ class Frontend(ABC):
             self._unexpected_response("build_wheel", basename, str, out, err)
         return WheelResult(wheel_directory / basename, out, err)
 
+    def build_editable(
+        self,
+        wheel_directory: Path,
+        config_settings: ConfigSettings | None = None,
+        metadata_directory: Path | None = None,
+    ) -> EditableResult:
+        """
+        Build an editable wheel file (per PEP-660).
+
+        :param wheel_directory: the folder where to build the editable wheel
+        :param config_settings: build arguments
+        :param metadata_directory: wheel metadata folder
+        :return: wheel build result
+        """
+        wheel_directory.mkdir(parents=True, exist_ok=True)
+        basename, out, err = self._send(
+            cmd="build_editable",
+            wheel_directory=wheel_directory,
+            config_settings=config_settings,
+            metadata_directory=metadata_directory,
+        )
+        if not isinstance(basename, str):
+            self._unexpected_response("build_editable", basename, str, out, err)
+        return EditableResult(wheel_directory / basename, out, err)
+
     def _unexpected_response(self, cmd: str, got: Any, expected_type: Any, out: str, err: str) -> NoReturn:
         msg = f"{cmd!r} on {self.backend!r} returned {got!r} but expected type {expected_type!r}"
         raise BackendFailed({"code": None, "exc_type": TypeError.__name__, "exc_msg": msg}, out, err)
 
     def _metadata_from_built_wheel(
-        self, config_settings: ConfigSettings | None, metadata_directory: Path | None
+        self, config_settings: ConfigSettings | None, metadata_directory: Path | None, cmd: str
     ) -> tuple[str, str, str]:
         with self._wheel_directory() as wheel_directory:
-            wheel_result = self.build_wheel(
+            wheel_result = getattr(self, cmd)(
                 wheel_directory=wheel_directory,
                 config_settings=config_settings,
                 metadata_directory=metadata_directory,

@@ -65,9 +65,9 @@ html.show_contexts = true
 html.skip_covered = false
 paths.source = [
   "src",
-  ".pyproject_api*/*/lib/python*/site-packages",
-  ".pyproject_api*/pypy*/site-packages",
-  ".pyproject_api*\\*\\Lib\\site-packages",
+  ".tox*/*/lib/python*/site-packages",
+  ".tox*/pypy*/site-packages",
+  ".tox*\\*\\Lib\\site-packages",
   "*/src",
   "*\\src",
 ]

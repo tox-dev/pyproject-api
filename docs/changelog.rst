@@ -1,6 +1,10 @@
 Release History
 ===============
 
+v1.1.0 - (2022-09-10)
+---------------------
+- PEP-660 support
+
 v1.0.0 - (2022-09-10)
 ---------------------
 - Use hatchling as build backend
