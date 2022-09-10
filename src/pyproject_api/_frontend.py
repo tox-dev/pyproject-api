@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
@@ -10,10 +11,14 @@ from time import sleep
 from typing import Any, Dict, Iterator, List, NamedTuple, NoReturn, Optional, cast
 from zipfile import ZipFile
 
-import tomli
 from packaging.requirements import Requirement
 
 from pyproject_api._util import ensure_empty_dir
+
+if sys.version_info >= (3, 11):  # pragma: no cover (py311+)
+    import tomllib
+else:  # pragma: no cover (py311+)
+    import tomli as tomllib
 
 _HERE = Path(__file__).parent
 ConfigSettings = Optional[Dict[str, Any]]
@@ -172,7 +177,7 @@ class Frontend(ABC):
         py_project_toml = folder / "pyproject.toml"
         if py_project_toml.exists():
             with py_project_toml.open("rb") as file_handler:
-                py_project = tomli.load(file_handler)
+                py_project = tomllib.load(file_handler)
             build_system = py_project.get("build-system", {})
             if "backend-path" in build_system:
                 backend_paths: tuple[Path, ...] = tuple(folder / p for p in build_system["backend-path"])
