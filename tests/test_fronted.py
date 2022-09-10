@@ -211,3 +211,98 @@ def test_create_no_pyproject(tmp_path: Path) -> None:
     assert all(isinstance(i, Requirement) for i in result[4])
     assert [str(i) for i in result[4]] == ["setuptools>=40.8.0", "wheel"]
     assert result[5] is True
+
+
+def test_backend_get_requires_for_build_editable(demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HAS_REQUIRES_EDITABLE", "1")
+    monkeypatch.delenv("REQUIRES_EDITABLE_BAD_RETURN", raising=False)
+    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = fronted.get_requires_for_build_editable()
+    assert [str(i) for i in result.requires] == ["editables"]
+    assert isinstance(result.requires[0], Requirement)
+    assert " get_requires_for_build_editable " in result.out
+    assert not result.err
+
+
+def test_backend_get_requires_for_build_editable_miss(demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("HAS_REQUIRES_EDITABLE", raising=False)
+    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = fronted.get_requires_for_build_editable()
+    assert not result.requires
+    assert " get_requires_for_build_editable " in result.out
+    assert not result.err
+
+
+def test_backend_get_requires_for_build_editable_bad(demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HAS_REQUIRES_EDITABLE", "1")
+    monkeypatch.setenv("REQUIRES_EDITABLE_BAD_RETURN", "1")
+    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    with pytest.raises(BackendFailed) as context:
+        fronted.get_requires_for_build_editable()
+    exc = context.value
+    assert exc.code is None
+    assert not exc.err
+    assert " get_requires_for_build_editable " in exc.out
+    assert not exc.args
+    assert exc.exc_type == "TypeError"
+    assert exc.exc_msg == "'get_requires_for_build_editable' on 'build' returned [1] but expected type 'list of string'"
+
+
+def test_backend_prepare_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HAS_PREPARE_EDITABLE", "1")
+    monkeypatch.delenv("PREPARE_EDITABLE_BAD", raising=False)
+    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = fronted.prepare_metadata_for_build_editable(tmp_path)
+    assert result.metadata.name == "demo_pkg_inline-1.0.0.dist-info"
+    assert " prepare_metadata_for_build_editable " in result.out
+    assert " build_editable " not in result.out
+    assert not result.err
+
+
+def test_backend_prepare_editable_miss(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("HAS_PREPARE_EDITABLE", raising=False)
+    monkeypatch.delenv("BUILD_EDITABLE_BAD", raising=False)
+    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = fronted.prepare_metadata_for_build_editable(tmp_path)
+    assert result.metadata.name == "demo_pkg_inline-1.0.0.dist-info"
+    assert " prepare_metadata_for_build_editable " not in result.out
+    assert " build_editable " in result.out
+    assert not result.err
+
+
+def test_backend_prepare_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HAS_PREPARE_EDITABLE", "1")
+    monkeypatch.setenv("PREPARE_EDITABLE_BAD", "1")
+    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    with pytest.raises(BackendFailed) as context:
+        fronted.prepare_metadata_for_build_editable(tmp_path)
+    exc = context.value
+    assert exc.code is None
+    assert not exc.err
+    assert " prepare_metadata_for_build_editable " in exc.out
+    assert not exc.args
+    assert exc.exc_type == "TypeError"
+    assert exc.exc_msg == "'prepare_metadata_for_build_wheel' on 'build' returned 1 but expected type <class 'str'>"
+
+
+def test_backend_build_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("BUILD_EDITABLE_BAD", raising=False)
+    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = fronted.build_editable(tmp_path)
+    assert result.wheel.name == "demo_pkg_inline-1.0.0-py3-none-any.whl"
+    assert " build_editable " in result.out
+    assert not result.err
+
+
+def test_backend_build_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BUILD_EDITABLE_BAD", "1")
+    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    with pytest.raises(BackendFailed) as context:
+        fronted.build_editable(tmp_path)
+    exc = context.value
+    assert exc.code is None
+    assert not exc.err
+    assert " build_editable " in exc.out
+    assert not exc.args
+    assert exc.exc_type == "TypeError"
+    assert exc.exc_msg == "'build_editable' on 'build' returned 1 but expected type <class 'str'>"

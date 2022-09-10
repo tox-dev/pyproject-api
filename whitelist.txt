@@ -1,6 +1,7 @@
 autoclass
 autodoc
 cfg
+delenv
 extlinks
 intersphinx
 iterdir
@@ -16,6 +17,7 @@ py38
 pygments
 pyproject
 sdist
+setenv
 tmpdir
 toml
 tomli
