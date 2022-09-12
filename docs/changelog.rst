@@ -1,6 +1,10 @@
 Release History
 ===============
 
+v1.1.1 - (2022-09-10)
+---------------------
+- Add missed `wheel` as test dependency
+
 v1.1.0 - (2022-09-10)
 ---------------------
 - PEP-660 support
