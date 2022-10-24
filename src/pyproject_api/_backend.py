@@ -3,7 +3,6 @@
 Please keep this file Python 2.7 compatible.
 See https://tox.readthedocs.io/en/rewrite/development.html#code-style-guide
 """
-from __future__ import print_function, unicode_literals
 
 import importlib
 import json
@@ -88,7 +87,7 @@ def run(argv):
                     raise
             finally:
                 try:
-                    with open(result_file, "wt") as file_handler:
+                    with open(result_file, "w") as file_handler:
                         json.dump(result, file_handler)
                 except Exception:
                     traceback.print_exc()
