@@ -96,7 +96,7 @@ if "HAS_PREPARE_EDITABLE" in os.environ:
         os.mkdir(dest)
         for arc_name, data in content.items():
             if arc_name.startswith(dist_info):
-                with open(os.path.join(metadata_directory, arc_name), "wt") as file_handler:
+                with open(os.path.join(metadata_directory, arc_name), "w") as file_handler:
                     file_handler.write(dedent(data).strip())
         print("created metadata {}".format(dest))
         if "PREPARE_EDITABLE_BAD" in os.environ:
