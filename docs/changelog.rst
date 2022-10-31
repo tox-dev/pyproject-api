@@ -1,9 +1,13 @@
 Release History
 ===============
 
+v1.1.2 - (2022-10-30)
+---------------------
+- Fix editable classes not exported at root level
+
 v1.1.1 - (2022-09-10)
 ---------------------
-- Add missed `wheel` as test dependency
+- Add missed ``wheel`` as test dependency
 
 v1.1.0 - (2022-09-10)
 ---------------------
