@@ -32,13 +32,25 @@ Build wheel requires
 ~~~~~~~~~~~~~~~~~~~~
 .. autoclass:: RequiresBuildWheelResult
 
+Editable requires
+~~~~~~~~~~~~~~~~~
+.. autoclass:: RequiresBuildEditableResult
+
 Wheel metadata
 ~~~~~~~~~~~~~~
 .. autoclass:: MetadataForBuildWheelResult
 
+Editable metadata
+~~~~~~~~~~~~~~~~~
+.. autoclass:: MetadataForBuildEditableResult
+
 Source distribution
 ~~~~~~~~~~~~~~~~~~~
 .. autoclass:: SdistResult
+
+Editable
+~~~~~~~~
+.. autoclass:: EditableResult
 
 Wheel
 ~~~~~

@@ -3,8 +3,11 @@ from __future__ import annotations
 from ._frontend import (
     BackendFailed,
     CmdStatus,
+    EditableResult,
     Frontend,
+    MetadataForBuildEditableResult,
     MetadataForBuildWheelResult,
+    RequiresBuildEditableResult,
     RequiresBuildSdistResult,
     RequiresBuildWheelResult,
     SdistResult,
@@ -23,8 +26,11 @@ __all__ = [
     "CmdStatus",
     "RequiresBuildSdistResult",
     "RequiresBuildWheelResult",
+    "RequiresBuildEditableResult",
     "MetadataForBuildWheelResult",
+    "MetadataForBuildEditableResult",
     "SdistResult",
     "WheelResult",
+    "EditableResult",
     "SubprocessFrontend",
 ]
