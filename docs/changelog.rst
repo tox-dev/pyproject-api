@@ -1,6 +1,10 @@
 Release History
 ===============
 
+v1.2.0 - (2022-12-04)
+---------------------
+- Expose which optional hooks are present or missing via :meth:`pyproject_api.Frontend.optional_hooks`
+
 v1.1.2 - (2022-10-30)
 ---------------------
 - Fix editable classes not exported at root level

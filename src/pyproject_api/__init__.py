@@ -7,6 +7,7 @@ from ._frontend import (
     Frontend,
     MetadataForBuildEditableResult,
     MetadataForBuildWheelResult,
+    OptionalHooks,
     RequiresBuildEditableResult,
     RequiresBuildSdistResult,
     RequiresBuildWheelResult,
@@ -33,4 +34,5 @@ __all__ = [
     "WheelResult",
     "EditableResult",
     "SubprocessFrontend",
+    "OptionalHooks",
 ]

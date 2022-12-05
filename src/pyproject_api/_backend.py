@@ -36,6 +36,19 @@ class BackendProxy:
     def _exit(self):
         return 0
 
+    def _optional_hooks(self):
+        return {
+            k: hasattr(self.backend, k)
+            for k in (
+                "get_requires_for_build_sdist",
+                "prepare_metadata_for_build_wheel",
+                "get_requires_for_build_wheel",
+                "build_editable",
+                "get_requires_for_build_editable",
+                "prepare_metadata_for_build_editable",
+            )
+        }
+
 
 def flush():
     sys.stderr.flush()

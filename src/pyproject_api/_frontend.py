@@ -15,6 +15,11 @@ from packaging.requirements import Requirement
 
 from pyproject_api._util import ensure_empty_dir
 
+if sys.version_info >= (3, 8):  # pragma: no cover (py38+)
+    from typing import TypedDict
+else:  # pragma: no cover (py38+)
+    from typing_extensions import TypedDict
+
 if sys.version_info >= (3, 11):  # pragma: no cover (py311+)
     import tomllib
 else:  # pragma: no cover (py311+)
@@ -22,6 +27,17 @@ else:  # pragma: no cover (py311+)
 
 _HERE = Path(__file__).parent
 ConfigSettings = Optional[Dict[str, Any]]
+
+
+class OptionalHooks(TypedDict, total=True):
+    """A flag indicating if the backend supports the optional hook or not"""
+
+    get_requires_for_build_sdist: bool
+    prepare_metadata_for_build_wheel: bool
+    get_requires_for_build_wheel: bool
+    build_editable: bool
+    get_requires_for_build_editable: bool
+    prepare_metadata_for_build_editable: bool
 
 
 class CmdStatus(ABC):
@@ -190,6 +206,7 @@ class Frontend(ABC):
         self._backend_obj = backend_obj
         self.requires: tuple[Requirement, ...] = requires
         self._reuse_backend = reuse_backend
+        self._optional_hooks: OptionalHooks | None = None
 
     @classmethod
     def create_args_from_folder(
@@ -243,6 +260,14 @@ class Frontend(ABC):
             result.append(self._backend_obj)
         return result
 
+    @property
+    def optional_hooks(self) -> OptionalHooks:
+        """:return: a dictionary indicating if the optional hook is supported or not"""
+        if self._optional_hooks is None:
+            result, _, __ = self._send("_optional_hooks")
+            self._optional_hooks = result
+        return self._optional_hooks
+
     def get_requires_for_build_sdist(self, config_settings: ConfigSettings | None = None) -> RequiresBuildSdistResult:
         """
         Get build requirements for a source distribution (per PEP-517).
@@ -250,10 +275,10 @@ class Frontend(ABC):
         :param config_settings: run arguments
         :return: outcome
         """
-        try:
+        if self.optional_hooks["get_requires_for_build_sdist"]:
             result, out, err = self._send(cmd="get_requires_for_build_sdist", config_settings=config_settings)
-        except BackendFailed as exc:
-            result, out, err = [], exc.out, exc.err
+        else:
+            result, out, err = [], "", ""
         if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
             self._unexpected_response("get_requires_for_build_sdist", result, "list of string", out, err)
         return RequiresBuildSdistResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
@@ -265,10 +290,10 @@ class Frontend(ABC):
         :param config_settings: run arguments
         :return: outcome
         """
-        try:
+        if self.optional_hooks["get_requires_for_build_wheel"]:
             result, out, err = self._send(cmd="get_requires_for_build_wheel", config_settings=config_settings)
-        except BackendFailed as exc:
-            result, out, err = [], exc.out, exc.err
+        else:
+            result, out, err = [], "", ""
         if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
             self._unexpected_response("get_requires_for_build_wheel", result, "list of string", out, err)
         return RequiresBuildWheelResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
@@ -282,10 +307,10 @@ class Frontend(ABC):
         :param config_settings: run arguments
         :return: outcome
         """
-        try:
+        if self.optional_hooks["get_requires_for_build_editable"]:
             result, out, err = self._send(cmd="get_requires_for_build_editable", config_settings=config_settings)
-        except BackendFailed as exc:
-            result, out, err = [], exc.out, exc.err
+        else:
+            result, out, err = [], "", ""
         if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
             self._unexpected_response("get_requires_for_build_editable", result, "list of string", out, err)
         return RequiresBuildEditableResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
@@ -301,13 +326,13 @@ class Frontend(ABC):
         :return: metadata generation result
         """
         self._check_metadata_dir(metadata_directory)
-        try:
+        if self.optional_hooks["prepare_metadata_for_build_wheel"]:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_wheel",
                 metadata_directory=metadata_directory,
                 config_settings=config_settings,
             )
-        except BackendFailed:
+        else:
             # if backend does not provide it acquire it from the wheel
             basename, err, out = self._metadata_from_built_wheel(config_settings, metadata_directory, "build_wheel")
         if not isinstance(basename, str):
@@ -333,13 +358,13 @@ class Frontend(ABC):
         :return: metadata generation result
         """
         self._check_metadata_dir(metadata_directory)
-        try:
+        if self.optional_hooks["prepare_metadata_for_build_editable"]:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_editable",
                 metadata_directory=metadata_directory,
                 config_settings=config_settings,
             )
-        except BackendFailed:
+        else:
             # if backend does not provide it acquire it from the wheel
             basename, err, out = self._metadata_from_built_wheel(config_settings, metadata_directory, "build_editable")
         if not isinstance(basename, str):
@@ -481,5 +506,5 @@ class Frontend(ABC):
 
     @abstractmethod
     @contextmanager
-    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[CmdStatus]:  # noqa: U100
+    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[CmdStatus]:
         raise NotImplementedError

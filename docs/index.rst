@@ -14,6 +14,8 @@ Frontend
 --------
 .. autoclass:: Frontend
 
+.. autoclass:: OptionalHooks
+
 Exceptions
 ----------
 

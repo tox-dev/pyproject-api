@@ -229,7 +229,7 @@ def test_backend_get_requires_for_build_editable_miss(demo_pkg_inline: Path, mon
     fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     result = fronted.get_requires_for_build_editable()
     assert not result.requires
-    assert " get_requires_for_build_editable " in result.out
+    assert not result.out
     assert not result.err
 
 
