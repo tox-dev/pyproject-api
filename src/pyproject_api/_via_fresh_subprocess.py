@@ -50,6 +50,7 @@ class SubprocessFrontend(Frontend):
         :param requires: seed requirements for the backend
         """
         super().__init__(root, backend_paths, backend_module, backend_obj, requires, reuse_backend=False)
+        self.executable = sys.executable
 
     @contextmanager
     def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[SubprocessCmdStatus]:  # noqa: U100
@@ -58,7 +59,7 @@ class SubprocessFrontend(Frontend):
         if backend:
             env["PYTHONPATH"] = backend
         process = Popen(
-            args=[sys.executable] + self.backend_args,
+            args=[self.executable] + self.backend_args,
             stdout=PIPE,
             stderr=PIPE,
             stdin=PIPE,

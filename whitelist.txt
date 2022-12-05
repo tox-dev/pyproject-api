@@ -2,6 +2,7 @@ autoclass
 autodoc
 cfg
 delenv
+exe
 extlinks
 intersphinx
 iterdir
@@ -24,4 +25,5 @@ tomli
 tomllib
 typehints
 unbuffered
+virtualenv
 win32

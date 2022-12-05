@@ -326,13 +326,14 @@ class Frontend(ABC):
         :return: metadata generation result
         """
         self._check_metadata_dir(metadata_directory)
+        basename: str | None = None
         if self.optional_hooks["prepare_metadata_for_build_wheel"]:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_wheel",
                 metadata_directory=metadata_directory,
                 config_settings=config_settings,
             )
-        else:
+        if basename is None:
             # if backend does not provide it acquire it from the wheel
             basename, err, out = self._metadata_from_built_wheel(config_settings, metadata_directory, "build_wheel")
         if not isinstance(basename, str):
@@ -358,13 +359,14 @@ class Frontend(ABC):
         :return: metadata generation result
         """
         self._check_metadata_dir(metadata_directory)
+        basename = None
         if self.optional_hooks["prepare_metadata_for_build_editable"]:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_editable",
                 metadata_directory=metadata_directory,
                 config_settings=config_settings,
             )
-        else:
+        if basename is None:
             # if backend does not provide it acquire it from the wheel
             basename, err, out = self._metadata_from_built_wheel(config_settings, metadata_directory, "build_editable")
         if not isinstance(basename, str):

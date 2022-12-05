@@ -85,13 +85,13 @@ def get_requires_for_build_sdist(config_settings=None):  # noqa: U100
 
 if "HAS_REQUIRES_EDITABLE" in os.environ:
 
-    def get_requires_for_build_editable(config_settings=...):  # noqa: U100
+    def get_requires_for_build_editable(config_settings=None):  # noqa: U100
         return [1] if "REQUIRES_EDITABLE_BAD_RETURN" in os.environ else ["editables"]
 
 
 if "HAS_PREPARE_EDITABLE" in os.environ:
 
-    def prepare_metadata_for_build_editable(metadata_directory: str, config_settings=None) -> str:  # noqa: U100
+    def prepare_metadata_for_build_editable(metadata_directory, config_settings=None):  # noqa: U100
         dest = os.path.join(metadata_directory, dist_info)
         os.mkdir(dest)
         for arc_name, data in content.items():
@@ -104,7 +104,7 @@ if "HAS_PREPARE_EDITABLE" in os.environ:
         return dist_info
 
 
-def build_editable(wheel_directory, metadata_directory=None, config_settings=None) -> str:
+def build_editable(wheel_directory, metadata_directory=None, config_settings=None):
     if "BUILD_EDITABLE_BAD" in os.environ:
         return 1  # type: ignore # checking bad type on purpose
     return build_wheel(wheel_directory, metadata_directory, config_settings)
