@@ -13,6 +13,7 @@ iwusr
 mktemp
 namelist
 nitpicky
+outdir
 prj
 py311
 py38
@@ -21,6 +22,7 @@ pyproject
 readouterr
 sdist
 setenv
+srcdir
 tmpdir
 toml
 tomli
