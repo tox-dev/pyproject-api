@@ -1,6 +1,10 @@
 Release History
 ===============
 
+v1.3.0 - (2022-01-03)
+---------------------
+- Do not allow exceptions to propagate in backend
+
 v1.2.1 - (2022-12-04)
 ---------------------
 - Fix Python 2 incompatibility on the backend
