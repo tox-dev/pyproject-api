@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+from typing import Any
 
 import pytest
+import pytest_mock
 
 from pyproject_api._backend import BackendProxy, run
 
 
-def test_invalid_module(capsys):
+def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(ImportError):
         run([str(False), "an.invalid.module"])
 
@@ -15,7 +18,7 @@ def test_invalid_module(capsys):
     assert "failed to start backend" in captured.err
 
 
-def test_invalid_request(mocker, capsys):
+def test_invalid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str]) -> None:
     """Validate behavior when an invalid request is issued."""
     command = "invalid json"
 
@@ -33,7 +36,7 @@ def test_invalid_request(mocker, capsys):
     assert "Backend: incorrect request to backend: " in captured.err
 
 
-def test_exception(mocker, capsys, tmp_path):
+def test_exception(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     """Ensure an exception in the backend is not bubbled up."""
     result = str(tmp_path / "result")
     command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": result})
@@ -55,7 +58,7 @@ def test_exception(mocker, capsys, tmp_path):
     assert "SystemExit: 1" in captured.err
 
 
-def test_valid_request(mocker, capsys, tmp_path):
+def test_valid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     """Validate the "success" path."""
     result = str(tmp_path / "result")
     command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": result})
@@ -76,7 +79,7 @@ def test_valid_request(mocker, capsys, tmp_path):
     assert "" == captured.err
 
 
-def test_reuse_process(mocker, capsys, tmp_path):
+def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     """Validate behavior when reusing the backend proxy process.
 
     There are a couple of things we'd like to check here:
@@ -98,7 +101,7 @@ def test_reuse_process(mocker, capsys, tmp_path):
         json.dumps({"cmd": "_exit", "kwargs": {}, "result": results[3]}),
     ]
 
-    def fake_backend(name, *args, **kwargs):  # noqa: U100
+    def fake_backend(name: str, *args: Any, **kwargs: Any) -> Any:  # noqa: U100
         if name == "dummy_command_b":
             raise SystemExit(2)
 
