@@ -97,8 +97,6 @@ def run(argv):
                 result["exc_msg"] = str(exception)
                 if not isinstance(exception, MissingCommand):  # for missing command do not print stack
                     traceback.print_exc()
-                if not isinstance(exception, Exception):  # allow SystemExit/KeyboardInterrupt to go through
-                    raise
             finally:
                 try:
                     with open(result_file, "w") as file_handler:

@@ -1,5 +1,6 @@
 autoclass
 autodoc
+capsys
 cfg
 delenv
 exe
@@ -17,6 +18,7 @@ py311
 py38
 pygments
 pyproject
+readouterr
 sdist
 setenv
 tmpdir
