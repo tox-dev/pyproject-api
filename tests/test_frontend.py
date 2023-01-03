@@ -27,9 +27,9 @@ def test_missing_backend(local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("")
     toml = tmp_path / "pyproject.toml"
     toml.write_text('[build-system]\nrequires=[]\nbuild-backend = "build_tester"')
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
     with pytest.raises(BackendFailed) as context:
-        fronted.build_wheel(tmp_path / "wheel")
+        frontend.build_wheel(tmp_path / "wheel")
     exc = context.value
     assert exc.exc_type == "RuntimeError"
     assert exc.code == 1
@@ -40,10 +40,10 @@ def test_missing_backend(local_builder: Callable[[str], Path]) -> None:
 @pytest.mark.parametrize("cmd", ["build_wheel", "build_sdist"])
 def test_missing_required_cmd(cmd: str, local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("")
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(BackendFailed) as context:
-        getattr(fronted, cmd)(tmp_path)
+        getattr(frontend, cmd)(tmp_path)
     exc = context.value
     assert f"has no attribute '{cmd}'" in exc.exc_msg
     assert exc.exc_type == "MissingCommand"
@@ -67,14 +67,14 @@ def demo_pkg_inline() -> Path:
 
 
 def test_backend_no_prepare_wheel(tmp_path: Path, demo_pkg_inline: Path) -> None:
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = fronted.prepare_metadata_for_build_wheel(tmp_path)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = frontend.prepare_metadata_for_build_wheel(tmp_path)
     assert result.metadata.name == "demo_pkg_inline-1.0.0.dist-info"
 
 
 def test_backend_build_sdist_demo_pkg_inline(tmp_path: Path, demo_pkg_inline: Path) -> None:
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = fronted.build_sdist(sdist_directory=tmp_path)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = frontend.build_sdist(sdist_directory=tmp_path)
     assert result.sdist == tmp_path / "demo_pkg_inline-1.0.0.tar.gz"
 
 
@@ -97,8 +97,8 @@ def test_backend_obj(tmp_path: Path) -> None:
     build.mkdir()
     (build / "__init__.py").write_text("")
     (build / "api.py").write_text(dedent(api))
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
-    result = fronted.get_requires_for_build_sdist()
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    result = frontend.get_requires_for_build_sdist()
     for left, right in zip(result.requires, (Requirement("a"),)):
         assert isinstance(left, Requirement)
         assert str(left) == str(right)
@@ -107,18 +107,18 @@ def test_backend_obj(tmp_path: Path) -> None:
 @pytest.mark.parametrize("of_type", ["wheel", "sdist"])
 def test_get_requires_for_build_missing(of_type: str, local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("")
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
-    result = getattr(fronted, f"get_requires_for_build_{of_type}")()
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    result = getattr(frontend, f"get_requires_for_build_{of_type}")()
     assert result.requires == ()
 
 
 @pytest.mark.parametrize("of_type", ["sdist", "wheel"])
 def test_bad_return_type_get_requires_for_build(of_type: str, local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder(f"def get_requires_for_build_{of_type}(config_settings=None): return 1")
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(BackendFailed) as context:
-        getattr(fronted, f"get_requires_for_build_{of_type}")()
+        getattr(frontend, f"get_requires_for_build_{of_type}")()
 
     exc = context.value
     msg = f"'get_requires_for_build_{of_type}' on 'build_tester' returned 1 but expected type 'list of string'"
@@ -128,10 +128,10 @@ def test_bad_return_type_get_requires_for_build(of_type: str, local_builder: Cal
 
 def test_bad_return_type_build_sdist(local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("def build_sdist(sdist_directory, config_settings=None): return 1")
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(BackendFailed) as context:
-        fronted.build_sdist(tmp_path)
+        frontend.build_sdist(tmp_path)
 
     exc = context.value
     assert exc.exc_msg == f"'build_sdist' on 'build_tester' returned 1 but expected type {str!r}"
@@ -141,10 +141,10 @@ def test_bad_return_type_build_sdist(local_builder: Callable[[str], Path]) -> No
 def test_bad_return_type_build_wheel(local_builder: Callable[[str], Path]) -> None:
     txt = "def build_wheel(wheel_directory, config_settings=None, metadata_directory=None): return 1"
     tmp_path = local_builder(txt)
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(BackendFailed) as context:
-        fronted.build_wheel(tmp_path)
+        frontend.build_wheel(tmp_path)
 
     exc = context.value
     assert exc.exc_msg == f"'build_wheel' on 'build_tester' returned 1 but expected type {str!r}"
@@ -153,10 +153,10 @@ def test_bad_return_type_build_wheel(local_builder: Callable[[str], Path]) -> No
 
 def test_bad_return_type_prepare_metadata_for_build_wheel(local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None): return 1")
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(BackendFailed) as context:
-        fronted.prepare_metadata_for_build_wheel(tmp_path / "meta")
+        frontend.prepare_metadata_for_build_wheel(tmp_path / "meta")
 
     exc = context.value
     assert exc.exc_type == "TypeError"
@@ -165,10 +165,10 @@ def test_bad_return_type_prepare_metadata_for_build_wheel(local_builder: Callabl
 
 def test_prepare_metadata_for_build_wheel_meta_is_root(local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None): return 1")
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(RuntimeError) as context:
-        fronted.prepare_metadata_for_build_wheel(tmp_path)
+        frontend.prepare_metadata_for_build_wheel(tmp_path)
 
     assert str(context.value) == f"the project root and the metadata directory can't be the same {tmp_path}"
 
@@ -176,10 +176,10 @@ def test_prepare_metadata_for_build_wheel_meta_is_root(local_builder: Callable[[
 def test_no_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str], Path]) -> None:
     txt = "def build_wheel(wheel_directory, config_settings=None, metadata_directory=None): return 'out'"
     tmp_path = local_builder(txt)
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(RuntimeError, match="missing wheel file return by backed *"):
-        fronted.prepare_metadata_for_build_wheel(tmp_path / "meta")
+        frontend.prepare_metadata_for_build_wheel(tmp_path / "meta")
 
 
 def test_bad_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str], Path]) -> None:
@@ -196,10 +196,10 @@ def test_bad_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str
         return path.name
     """
     tmp_path = local_builder(txt)
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(RuntimeError, match="no .dist-info found inside generated wheel*"):
-        fronted.prepare_metadata_for_build_wheel(tmp_path / "meta")
+        frontend.prepare_metadata_for_build_wheel(tmp_path / "meta")
 
 
 def test_create_no_pyproject(tmp_path: Path) -> None:
@@ -217,8 +217,8 @@ def test_create_no_pyproject(tmp_path: Path) -> None:
 def test_backend_get_requires_for_build_editable(demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HAS_REQUIRES_EDITABLE", "1")
     monkeypatch.delenv("REQUIRES_EDITABLE_BAD_RETURN", raising=False)
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = fronted.get_requires_for_build_editable()
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = frontend.get_requires_for_build_editable()
     assert [str(i) for i in result.requires] == ["editables"]
     assert isinstance(result.requires[0], Requirement)
     assert " get_requires_for_build_editable " in result.out
@@ -227,8 +227,8 @@ def test_backend_get_requires_for_build_editable(demo_pkg_inline: Path, monkeypa
 
 def test_backend_get_requires_for_build_editable_miss(demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("HAS_REQUIRES_EDITABLE", raising=False)
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = fronted.get_requires_for_build_editable()
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = frontend.get_requires_for_build_editable()
     assert not result.requires
     assert not result.out
     assert not result.err
@@ -237,9 +237,9 @@ def test_backend_get_requires_for_build_editable_miss(demo_pkg_inline: Path, mon
 def test_backend_get_requires_for_build_editable_bad(demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HAS_REQUIRES_EDITABLE", "1")
     monkeypatch.setenv("REQUIRES_EDITABLE_BAD_RETURN", "1")
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     with pytest.raises(BackendFailed) as context:
-        fronted.get_requires_for_build_editable()
+        frontend.get_requires_for_build_editable()
     exc = context.value
     assert exc.code is None
     assert not exc.err
@@ -252,8 +252,8 @@ def test_backend_get_requires_for_build_editable_bad(demo_pkg_inline: Path, monk
 def test_backend_prepare_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HAS_PREPARE_EDITABLE", "1")
     monkeypatch.delenv("PREPARE_EDITABLE_BAD", raising=False)
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = fronted.prepare_metadata_for_build_editable(tmp_path)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = frontend.prepare_metadata_for_build_editable(tmp_path)
     assert result.metadata.name == "demo_pkg_inline-1.0.0.dist-info"
     assert " prepare_metadata_for_build_editable " in result.out
     assert " build_editable " not in result.out
@@ -263,8 +263,8 @@ def test_backend_prepare_editable(tmp_path: Path, demo_pkg_inline: Path, monkeyp
 def test_backend_prepare_editable_miss(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("HAS_PREPARE_EDITABLE", raising=False)
     monkeypatch.delenv("BUILD_EDITABLE_BAD", raising=False)
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = fronted.prepare_metadata_for_build_editable(tmp_path)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = frontend.prepare_metadata_for_build_editable(tmp_path)
     assert result.metadata.name == "demo_pkg_inline-1.0.0.dist-info"
     assert " prepare_metadata_for_build_editable " not in result.out
     assert " build_editable " in result.out
@@ -274,9 +274,9 @@ def test_backend_prepare_editable_miss(tmp_path: Path, demo_pkg_inline: Path, mo
 def test_backend_prepare_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HAS_PREPARE_EDITABLE", "1")
     monkeypatch.setenv("PREPARE_EDITABLE_BAD", "1")
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     with pytest.raises(BackendFailed) as context:
-        fronted.prepare_metadata_for_build_editable(tmp_path)
+        frontend.prepare_metadata_for_build_editable(tmp_path)
     exc = context.value
     assert exc.code is None
     assert not exc.err
@@ -288,8 +288,8 @@ def test_backend_prepare_editable_bad(tmp_path: Path, demo_pkg_inline: Path, mon
 
 def test_backend_build_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("BUILD_EDITABLE_BAD", raising=False)
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = fronted.build_editable(tmp_path)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = frontend.build_editable(tmp_path)
     assert result.wheel.name == "demo_pkg_inline-1.0.0-py3-none-any.whl"
     assert " build_editable " in result.out
     assert not result.err
@@ -297,9 +297,9 @@ def test_backend_build_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypat
 
 def test_backend_build_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BUILD_EDITABLE_BAD", "1")
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     with pytest.raises(BackendFailed) as context:
-        fronted.build_editable(tmp_path)
+        frontend.build_editable(tmp_path)
     exc = context.value
     assert exc.code is None
     assert not exc.err
@@ -310,9 +310,9 @@ def test_backend_build_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monke
 
 
 def test_can_build_on_python_2(demo_pkg_inline: Path, tmp_path: Path) -> None:
-    fronted = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     env = session_via_cli(["-p", "2.7", str(tmp_path / "venv")])
     env.run()
-    fronted.executable = str(env.creator.exe)
+    frontend.executable = str(env.creator.exe)
 
-    fronted.build_sdist(tmp_path)
+    frontend.build_sdist(tmp_path)
