@@ -1,6 +1,10 @@
 Release History
 ===============
 
+v1.4.0 - (2022-01-04)
+---------------------
+- Add minimal CLI for debugging
+
 v1.3.0 - (2022-01-03)
 ---------------------
 - Do not allow exceptions to propagate in backend
