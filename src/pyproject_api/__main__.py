@@ -4,7 +4,6 @@ import argparse
 import os
 import pathlib
 import sys
-import textwrap
 
 from ._frontend import EditableResult, SdistResult, WheelResult
 from ._via_fresh_subprocess import SubprocessFrontend
@@ -12,17 +11,11 @@ from ._via_fresh_subprocess import SubprocessFrontend
 
 def main_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description=textwrap.indent(
-            textwrap.dedent(
-                """A pyproject.toml-based build frontend.
-
-                This is mainly useful for debugging PEP-517 backends. This frontend will not
-                do things like install required build dependencies.
-                """
-            ).strip(),
-            "    ",
+        description=(
+            "A pyproject.toml-based build frontend. "
+            "This is mainly useful for debugging PEP-517 backends. "
+            "This frontend will not do things like install required build dependencies."
         ),
-        formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
         "srcdir",
