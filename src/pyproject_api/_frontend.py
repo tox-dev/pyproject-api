@@ -453,7 +453,7 @@ class Frontend(ABC):
             wheel_result = getattr(self, cmd)(
                 wheel_directory=wheel_directory,
                 config_settings=config_settings,
-                metadata_directory=metadata_directory,
+                metadata_directory=None,  # let the backend populate the metadata
             )
             wheel = wheel_result.wheel
             if not wheel.exists():

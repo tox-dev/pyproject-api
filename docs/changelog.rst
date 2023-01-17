@@ -1,6 +1,12 @@
 Release History
 ===============
 
+v1.5.0 - (2023-01-17)
+---------------------
+- When getting metadata from a built wheel, do not pass ``metadata_directory``
+  to ``build_wheel``, which forces the backend to generate the metadata - by :user:`masenf`.
+  (`#47 <https://github.com/tox-dev/pyproject-api/issues/47>`_)
+
 v1.4.0 - (2022-01-04)
 ---------------------
 - Add minimal CLI for debugging
