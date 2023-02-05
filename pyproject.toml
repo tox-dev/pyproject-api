@@ -1,32 +1,25 @@
 [build-system]
 build-backend = "hatchling.build"
-requires = ["hatchling>=1.11.1", "hatch-vcs>=0.2"]
+requires = [
+  "hatch-vcs>=0.3",
+  "hatchling>=1.12.2",
+]
 
 [project]
 name = "pyproject_api"
 description = "API to interact with the python pyproject.toml based projects"
-readme.file = "README.md"
 readme.content-type = "text/markdown"
-keywords = ["virtual", "environments", "isolated", "testing"]
-license = "MIT"
-urls.Homepage = "http://pyproject_api.readthedocs.org"
-urls.Source = "https://github.com/tox-dev/pyproject-api"
-urls.Tracker = "https://github.com/tox-dev/pyproject-api/issues"
-authors = [{ name = "Bernát Gábor", email = "gaborjbernat@gmail.com" }]
-maintainers = [{ name = "Bernát Gábor", email = "gaborjbernat@gmail.com" }]
-requires-python = ">=3.7"
-dependencies = ["packaging>=21.3", 'tomli>=2.0.1; python_version < "3.11"']
-optional-dependencies.docs = ["furo>=2022.9.29", "sphinx>=5.3", "sphinx-autodoc-typehints>=1.19.5"]
-optional-dependencies.testing = [
-  "covdefaults>=2.2.2",
-  "pytest>=7.2",
-  "pytest-cov>=4",
-  "pytest-mock>=3.10",
-  'importlib-metadata>=5.1; python_version < "3.8"',
-  "wheel>=0.38.4",
-  "virtualenv>=20.17",
+readme.file = "README.md"
+keywords = [
+  "environments",
+  "isolated",
+  "testing",
+  "virtual",
 ]
-dynamic = ["version"]
+license = "MIT"
+maintainers = [{ name = "Bernát Gábor", email = "gaborjbernat@gmail.com" }]
+authors = [{ name = "Bernát Gábor", email = "gaborjbernat@gmail.com" }]
+requires-python = ">=3.7"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Framework :: tox",
@@ -35,17 +28,34 @@ classifiers = [
   "Operating System :: MacOS :: MacOS X",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Testing",
   "Topic :: Utilities",
 ]
+dynamic = [
+  "version",
+]
+dependencies = [
+  "packaging>=23",
+  'tomli>=2.0.1; python_version < "3.11"',
+]
+optional-dependencies.docs = [
+  "furo>=2022.12.7",
+  "sphinx>=6.1.3",
+  "sphinx-autodoc-typehints!=1.23.4,>=1.22",
+]
+optional-dependencies.testing = [
+  "covdefaults>=2.2.2",
+  'importlib-metadata>=6; python_version < "3.8"',
+  "pytest>=7.2.1",
+  "pytest-cov>=4",
+  "pytest-mock>=3.10",
+  "virtualenv>=20.17.1",
+  "wheel>=0.38.4",
+]
+urls.Homepage = "http://pyproject_api.readthedocs.org"
+urls.Source = "https://github.com/tox-dev/pyproject-api"
+urls.Tracker = "https://github.com/tox-dev/pyproject-api/issues"
 
 [tool.hatch]
 build.hooks.vcs.version-file = "src/pyproject_api/_version.py"
