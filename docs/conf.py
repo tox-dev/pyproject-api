@@ -20,7 +20,7 @@ extensions = [
 master_doc, source_suffix = "index", ".rst"
 
 html_theme = "furo"
-html_title, html_last_updated_fmt = "pyproject-api docs", datetime.now().isoformat()
+html_title, html_last_updated_fmt = "pyproject-api docs", "%Y-%m-%dT%H:%M:%S"
 pygments_style, pygments_dark_style = "sphinx", "monokai"
 
 autoclass_content, autodoc_typehints = "both", "none"
