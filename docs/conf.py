@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from pyproject_api import __version__
 
 project = name = "pyproject_api"
 company = "tox-dev"
-copyright = f"2021-{datetime.today().year}, {company}"
+copyright = f"{company}"
 version, release = __version__, __version__.split("+")[0]
 
 extensions = [
