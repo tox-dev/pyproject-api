@@ -6,7 +6,7 @@ requires = [
 ]
 
 [project]
-name = "pyproject_api"
+name = "pyproject-api"
 description = "API to interact with the python pyproject.toml based projects"
 readme.content-type = "text/markdown"
 readme.file = "README.md"
@@ -64,6 +64,18 @@ version.source = "vcs"
 [tool.black]
 line-length = 120
 
+[tool.isort]
+known_first_party = ["pyproject_api"]
+profile = "black"
+line_length = 120
+
+[tool.flake8]
+max-complexity = 22
+max-line-length = 120
+unused-arguments-ignore-abstract-functions = true
+noqa-require-code = true
+dictionaries = ["en_US", "python", "technical", "django"]
+
 [tool.coverage]
 html.show_contexts = true
 html.skip_covered = false
@@ -80,11 +92,6 @@ report.omit = []
 run.parallel = true
 run.plugins = ["covdefaults"]
 
-[tool.isort]
-known_first_party = ["pyproject_api"]
-profile = "black"
-line_length = 120
-
 [tool.mypy]
 python_version = "3.11"
 show_error_codes = true
@@ -93,10 +100,3 @@ overrides = [{ module = ["virtualenv.*"], ignore_missing_imports = true }]
 
 [tool.pep8]
 max-line-length = "120"
-
-[tool.flake8]
-max-complexity = 22
-max-line-length = 120
-unused-arguments-ignore-abstract-functions = true
-noqa-require-code = true
-dictionaries = ["en_US", "python", "technical", "django"]
