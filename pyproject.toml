@@ -2,7 +2,7 @@
 build-backend = "hatchling.build"
 requires = [
   "hatch-vcs>=0.3",
-  "hatchling>=1.12.2",
+  "hatchling>=1.13",
 ]
 
 [project]
@@ -45,12 +45,12 @@ optional-dependencies.docs = [
   "sphinx-autodoc-typehints!=1.23.4,>=1.22",
 ]
 optional-dependencies.testing = [
-  "covdefaults>=2.2.2",
+  "covdefaults>=2.3",
   'importlib-metadata>=6; python_version < "3.8"',
-  "pytest>=7.2.1",
+  "pytest>=7.2.2",
   "pytest-cov>=4",
   "pytest-mock>=3.10",
-  "virtualenv>=20.17.1",
+  "virtualenv>=20.20",
   "wheel>=0.38.4",
 ]
 urls.Homepage = "http://pyproject_api.readthedocs.org"
