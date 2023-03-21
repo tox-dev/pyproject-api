@@ -46,12 +46,12 @@ optional-dependencies.docs = [
 ]
 optional-dependencies.testing = [
   "covdefaults>=2.3",
-  'importlib-metadata>=6; python_version < "3.8"',
+  'importlib-metadata>=6.1; python_version < "3.8"',
   "pytest>=7.2.2",
   "pytest-cov>=4",
   "pytest-mock>=3.10",
-  "virtualenv>=20.20",
-  "wheel>=0.38.4",
+  "virtualenv>=20.21",
+  "wheel>=0.40",
 ]
 urls.Homepage = "http://pyproject_api.readthedocs.org"
 urls.Source = "https://github.com/tox-dev/pyproject-api"
