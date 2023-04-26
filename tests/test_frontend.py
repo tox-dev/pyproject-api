@@ -6,7 +6,6 @@ from typing import Callable
 
 import pytest
 from packaging.requirements import Requirement
-from virtualenv import session_via_cli
 
 from pyproject_api._frontend import BackendFailed
 from pyproject_api._via_fresh_subprocess import SubprocessFrontend
@@ -307,12 +306,3 @@ def test_backend_build_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monke
     assert not exc.args
     assert exc.exc_type == "TypeError"
     assert exc.exc_msg == "'build_editable' on 'build' returned 1 but expected type <class 'str'>"
-
-
-def test_can_build_on_python_2(demo_pkg_inline: Path, tmp_path: Path) -> None:
-    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    env = session_via_cli(["-p", "2.7", str(tmp_path / "venv")])
-    env.run()
-    frontend.executable = str(env.creator.exe)
-
-    frontend.build_sdist(tmp_path)
