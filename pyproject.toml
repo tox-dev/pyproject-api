@@ -50,8 +50,8 @@ optional-dependencies.testing = [
   "pytest>=7.3.1",
   "pytest-cov>=4",
   "pytest-mock>=3.10",
-  "wheel>=0.40",
   "setuptools>=67.7.2",
+  "wheel>=0.40",
 ]
 urls.Homepage = "http://pyproject_api.readthedocs.org"
 urls.Source = "https://github.com/tox-dev/pyproject-api"
