@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import sys
 from contextlib import contextmanager
-from pathlib import Path
 from stat import S_IWGRP, S_IWOTH, S_IWUSR
-from typing import Iterator, NamedTuple
+from typing import TYPE_CHECKING, Iterator, NamedTuple
 
 import pytest
-from _pytest.tmpdir import TempPathFactory
 from packaging.requirements import Requirement
-from pytest_mock import MockerFixture
 
 from pyproject_api._frontend import BackendFailed
 from pyproject_api._via_fresh_subprocess import SubprocessFrontend
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from _pytest.tmpdir import TempPathFactory
+    from pytest_mock import MockerFixture
 
 if sys.version_info >= (3, 8):  # pragma: no cover (py38+)
     from importlib.metadata import Distribution, EntryPoint
@@ -24,7 +27,7 @@ else:  # pragma: no cover (<py38)
 def frontend_setuptools(tmp_path_factory: TempPathFactory) -> SubprocessFrontend:
     prj = tmp_path_factory.mktemp("proj")
     (prj / "pyproject.toml").write_text(
-        '[build-system]\nrequires=["setuptools","wheel"]\nbuild-backend = "setuptools.build_meta"'
+        '[build-system]\nrequires=["setuptools","wheel"]\nbuild-backend = "setuptools.build_meta"',
     )
     cfg = """
         [metadata]
@@ -73,7 +76,7 @@ def test_setuptools_prepare_metadata_for_build_wheel(frontend_setuptools: Subpro
     assert list(dist.entry_points) == [EntryPoint(name="demo_exe", value="demo:a", group="console_scripts")]
     assert dist.version == "1.0"
     assert dist.metadata["Name"] == "demo"
-    values = [v for k, v in dist.metadata.items() if k == "Requires-Dist"]  # type: ignore
+    values = [v for k, v in dist.metadata.items() if k == "Requires-Dist"]  # type: ignore[attr-defined]
     # ignore because "PackageMetadata" has no attribute "items"
     assert values == ["requests (>2)", "magic (>3)"]
     assert isinstance(result.out, str)
@@ -135,7 +138,7 @@ def test_setuptools_exception(frontend_setuptools: SubprocessFrontend) -> None:
 
 
 def test_bad_message(frontend_setuptools: SubprocessFrontend, tmp_path: Path) -> None:
-    with frontend_setuptools._send_msg("bad_cmd", tmp_path / "a", "{{") as status:
+    with frontend_setuptools._send_msg("bad_cmd", tmp_path / "a", "{{") as status:  # noqa: SLF001
         while not status.done:  # pragma: no branch
             pass
     out, err = status.out_err()

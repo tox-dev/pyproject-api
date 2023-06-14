@@ -3,14 +3,16 @@ from __future__ import annotations
 import os
 import sys
 from contextlib import contextmanager
-from pathlib import Path
 from subprocess import PIPE, Popen
 from threading import Thread
-from typing import IO, Any, Iterator, Tuple, cast
-
-from packaging.requirements import Requirement
+from typing import IO, TYPE_CHECKING, Any, Iterator, Tuple, cast
 
 from ._frontend import CmdStatus, Frontend
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from packaging.requirements import Requirement
 
 
 class SubprocessCmdStatus(CmdStatus, Thread):
@@ -34,15 +36,17 @@ class SubprocessCmdStatus(CmdStatus, Thread):
 class SubprocessFrontend(Frontend):
     """A frontend that creates fresh subprocess at every call to communicate with the backend."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         root: Path,
         backend_paths: tuple[Path, ...],
         backend_module: str,
         backend_obj: str | None,
         requires: tuple[Requirement, ...],
-    ):
+    ) -> None:
         """
+        Create a subprocess frontend.
+
         :param root: the root path to the built project
         :param backend_paths: paths that are available on the python path for the backend
         :param backend_module: module where the backend is located
@@ -53,13 +57,13 @@ class SubprocessFrontend(Frontend):
         self.executable = sys.executable
 
     @contextmanager
-    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[SubprocessCmdStatus]:  # noqa: U100
+    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[SubprocessCmdStatus]:  # noqa: ARG002
         env = os.environ.copy()
         backend = os.pathsep.join(str(i) for i in self._backend_paths).strip()
         if backend:
             env["PYTHONPATH"] = backend
         process = Popen(
-            args=[self.executable] + self.backend_args,
+            args=[self.executable, *self.backend_args],
             stdout=PIPE,
             stderr=PIPE,
             stdin=PIPE,

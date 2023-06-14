@@ -1,3 +1,4 @@
+"""PyProject API interface."""
 from __future__ import annotations
 
 from ._frontend import (

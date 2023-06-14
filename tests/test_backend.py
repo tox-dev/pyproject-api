@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
-import pytest_mock
 
 from pyproject_api._backend import BackendProxy, run
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest_mock
 
 
 def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
@@ -76,7 +79,7 @@ def test_valid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
     assert "started backend FakeBackendProxy" in captured.out
     assert "Backend: run command dummy_command with args {'foo': 'bar'}" in captured.out
     assert "Backend: Wrote response " in captured.out
-    assert "" == captured.err
+    assert not captured.err
 
 
 def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
@@ -101,7 +104,7 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
         json.dumps({"cmd": "_exit", "kwargs": {}, "result": results[3]}),
     ]
 
-    def fake_backend(name: str, *args: Any, **kwargs: Any) -> Any:  # noqa: U100
+    def fake_backend(name: str, *args: Any, **kwargs: Any) -> Any:  # noqa: ARG001
         if name == "dummy_command_b":
             raise SystemExit(2)
 

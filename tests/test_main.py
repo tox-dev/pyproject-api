@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-import pytest_mock
 
 import pyproject_api.__main__
 from pyproject_api._frontend import EditableResult, SdistResult, WheelResult
+
+if TYPE_CHECKING:
+    import pytest_mock
 
 
 @pytest.mark.parametrize(
@@ -56,7 +59,7 @@ from pyproject_api._frontend import EditableResult, SdistResult, WheelResult
         ),
     ],
 )
-def test_parse_args(
+def test_parse_args(  # noqa: PLR0913
     mocker: pytest_mock.MockerFixture,
     capsys: pytest.CaptureFixture[str],
     cli_args: list[str],
@@ -72,7 +75,9 @@ def test_parse_args(
         err="sdist err",
     )
     subprocess_frontend.return_value.build_wheel.return_value = WheelResult(
-        wheel=outdir / "foo.whl", out="wheel out", err="wheel err"
+        wheel=outdir / "foo.whl",
+        out="wheel out",
+        err="wheel err",
     )
     subprocess_frontend.return_value.build_editable.return_value = EditableResult(
         wheel=outdir / "foo.whl",

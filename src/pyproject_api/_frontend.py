@@ -1,4 +1,4 @@
-"""Build frontend for PEP-517"""
+"""Build frontend for PEP-517."""
 from __future__ import annotations
 
 import json
@@ -30,7 +30,7 @@ ConfigSettings = Optional[Dict[str, Any]]
 
 
 class OptionalHooks(TypedDict, total=True):
-    """A flag indicating if the backend supports the optional hook or not"""
+    """A flag indicating if the backend supports the optional hook or not."""
 
     get_requires_for_build_sdist: bool
     prepare_metadata_for_build_wheel: bool
@@ -54,7 +54,7 @@ class CmdStatus(ABC):
 
 
 class RequiresBuildSdistResult(NamedTuple):
-    """Information collected while acquiring the source distribution build dependencies"""
+    """Information collected while acquiring the source distribution build dependencies."""
 
     #: wheel build dependencies
     requires: tuple[Requirement, ...]
@@ -65,7 +65,7 @@ class RequiresBuildSdistResult(NamedTuple):
 
 
 class RequiresBuildWheelResult(NamedTuple):
-    """Information collected while acquiring the wheel build dependencies"""
+    """Information collected while acquiring the wheel build dependencies."""
 
     #: wheel build dependencies
     requires: tuple[Requirement, ...]
@@ -76,7 +76,7 @@ class RequiresBuildWheelResult(NamedTuple):
 
 
 class RequiresBuildEditableResult(NamedTuple):
-    """Information collected while acquiring the wheel build dependencies"""
+    """Information collected while acquiring the wheel build dependencies."""
 
     #: editable wheel build dependencies
     requires: tuple[Requirement, ...]
@@ -87,7 +87,7 @@ class RequiresBuildEditableResult(NamedTuple):
 
 
 class MetadataForBuildWheelResult(NamedTuple):
-    """Information collected while acquiring the wheel metadata"""
+    """Information collected while acquiring the wheel metadata."""
 
     #: path to the wheel metadata
     metadata: Path
@@ -98,7 +98,7 @@ class MetadataForBuildWheelResult(NamedTuple):
 
 
 class MetadataForBuildEditableResult(NamedTuple):
-    """Information collected while acquiring the editable metadata"""
+    """Information collected while acquiring the editable metadata."""
 
     #: path to the wheel metadata
     metadata: Path
@@ -109,7 +109,7 @@ class MetadataForBuildEditableResult(NamedTuple):
 
 
 class SdistResult(NamedTuple):
-    """Information collected while building a source distribution"""
+    """Information collected while building a source distribution."""
 
     #: path to the built source distribution
     sdist: Path
@@ -120,7 +120,7 @@ class SdistResult(NamedTuple):
 
 
 class WheelResult(NamedTuple):
-    """Information collected while building a wheel"""
+    """Information collected while building a wheel."""
 
     #: path to the built wheel artifact
     wheel: Path
@@ -131,7 +131,7 @@ class WheelResult(NamedTuple):
 
 
 class EditableResult(NamedTuple):
-    """Information collected while building an editable wheel"""
+    """Information collected while building an editable wheel."""
 
     #: path to the built wheel artifact
     wheel: Path
@@ -141,7 +141,7 @@ class EditableResult(NamedTuple):
     err: str
 
 
-class BackendFailed(RuntimeError):
+class BackendFailed(RuntimeError):  # noqa: N818
     """An error of the build backend."""
 
     def __init__(self, result: dict[str, Any], out: str, err: str) -> None:
@@ -172,23 +172,21 @@ class BackendFailed(RuntimeError):
 
 
 class Frontend(ABC):
-    """
-    Abstract base class for a pyproject frontend.
-    """
+    """Abstract base class for a pyproject frontend."""
 
     #: backend key when the ``pyproject.toml`` does not specify it
     LEGACY_BUILD_BACKEND: str = "setuptools.build_meta:__legacy__"
     #: backend requirements when the ``pyproject.toml`` does not specify it
     LEGACY_REQUIRES: tuple[Requirement, ...] = (Requirement("setuptools >= 40.8.0"), Requirement("wheel"))
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         root: Path,
         backend_paths: tuple[Path, ...],
         backend_module: str,
         backend_obj: str | None,
         requires: tuple[Requirement, ...],
-        reuse_backend: bool = True,
+        reuse_backend: bool = True,  # noqa: FBT001, FBT002
     ) -> None:
         """
         Create a new frontend.
@@ -210,7 +208,8 @@ class Frontend(ABC):
 
     @classmethod
     def create_args_from_folder(
-        cls, folder: Path
+        cls,
+        folder: Path,
     ) -> tuple[Path, tuple[Path, ...], str, str | None, tuple[Requirement, ...], bool]:
         """
         Frontend creation arguments from a python project folder (thould have a ``pypyproject.toml`` file per PEP-518).
@@ -299,7 +298,8 @@ class Frontend(ABC):
         return RequiresBuildWheelResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
 
     def get_requires_for_build_editable(
-        self, config_settings: ConfigSettings | None = None
+        self,
+        config_settings: ConfigSettings | None = None,
     ) -> RequiresBuildEditableResult:
         """
         Get build requirements for an editable wheel build (per PEP-660).
@@ -316,7 +316,9 @@ class Frontend(ABC):
         return RequiresBuildEditableResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
 
     def prepare_metadata_for_build_wheel(
-        self, metadata_directory: Path, config_settings: ConfigSettings | None = None
+        self,
+        metadata_directory: Path,
+        config_settings: ConfigSettings | None = None,
     ) -> MetadataForBuildWheelResult:
         """
         Build wheel metadata (per PEP-517).
@@ -343,13 +345,16 @@ class Frontend(ABC):
 
     def _check_metadata_dir(self, metadata_directory: Path) -> None:
         if metadata_directory == self._root:
-            raise RuntimeError(f"the project root and the metadata directory can't be the same {self._root}")
+            msg = f"the project root and the metadata directory can't be the same {self._root}"
+            raise RuntimeError(msg)
         if metadata_directory.exists():  # start with fresh
             ensure_empty_dir(metadata_directory)
         metadata_directory.mkdir(parents=True, exist_ok=True)
 
     def prepare_metadata_for_build_editable(
-        self, metadata_directory: Path, config_settings: ConfigSettings | None = None
+        self,
+        metadata_directory: Path,
+        config_settings: ConfigSettings | None = None,
     ) -> MetadataForBuildEditableResult:
         """
         Build editable wheel metadata (per PEP-660).
@@ -442,12 +447,22 @@ class Frontend(ABC):
             self._unexpected_response("build_editable", basename, str, out, err)
         return EditableResult(wheel_directory / basename, out, err)
 
-    def _unexpected_response(self, cmd: str, got: Any, expected_type: Any, out: str, err: str) -> NoReturn:
+    def _unexpected_response(  # noqa: PLR0913
+        self,
+        cmd: str,
+        got: Any,
+        expected_type: Any,
+        out: str,
+        err: str,
+    ) -> NoReturn:
         msg = f"{cmd!r} on {self.backend!r} returned {got!r} but expected type {expected_type!r}"
         raise BackendFailed({"code": None, "exc_type": TypeError.__name__, "exc_msg": msg}, out, err)
 
     def _metadata_from_built_wheel(
-        self, config_settings: ConfigSettings | None, metadata_directory: Path | None, cmd: str
+        self,
+        config_settings: ConfigSettings | None,
+        metadata_directory: Path | None,
+        cmd: str,
     ) -> tuple[str, str, str]:
         with self._wheel_directory() as wheel_directory:
             wheel_result = getattr(self, cmd)(
@@ -457,7 +472,8 @@ class Frontend(ABC):
             )
             wheel = wheel_result.wheel
             if not wheel.exists():
-                raise RuntimeError(f"missing wheel file return by backed {wheel!r}")
+                msg = f"missing wheel file return by backed {wheel!r}"
+                raise RuntimeError(msg)
             out, err = wheel_result.out, wheel_result.err
             extract_to = str(metadata_directory)
             basename = None
@@ -468,7 +484,8 @@ class Frontend(ABC):
                         basename = path.parts[0]
                         zip_file.extract(name, extract_to)
             if basename is None:  # pragma: no branch
-                raise RuntimeError(f"no .dist-info found inside generated wheel {wheel}")
+                msg = f"no .dist-info found inside generated wheel {wheel}"
+                raise RuntimeError(msg)
         return basename, err, out
 
     @contextmanager
@@ -484,7 +501,7 @@ class Frontend(ABC):
                     "cmd": cmd,
                     "kwargs": {k: (str(v) if isinstance(v, Path) else v) for k, v in kwargs.items()},
                     "result": str(result_file),
-                }
+                },
             )
             with self._send_msg(cmd, result_file, msg) as status:
                 while not status.done:  # pragma: no branch

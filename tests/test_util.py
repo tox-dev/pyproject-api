@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pyproject_api._util import ensure_empty_dir
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_ensure_empty_dir_on_empty(tmp_path: Path) -> None:

@@ -1,10 +1,11 @@
+# noqa: D100
 from __future__ import annotations
 
 from pyproject_api import __version__
 
 project = name = "pyproject_api"
 company = "tox-dev"
-copyright = f"{company}"
+copyright = f"{company}"  # noqa: A001
 version, release = __version__, __version__.split("+")[0]
 
 extensions = [
