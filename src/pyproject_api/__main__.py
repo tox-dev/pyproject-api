@@ -1,15 +1,18 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: D100
 
 import argparse
 import os
 import pathlib
 import sys
+from typing import TYPE_CHECKING
 
-from ._frontend import EditableResult, SdistResult, WheelResult
 from ._via_fresh_subprocess import SubprocessFrontend
 
+if TYPE_CHECKING:
+    from ._frontend import EditableResult, SdistResult, WheelResult
 
-def main_parser() -> argparse.ArgumentParser:
+
+def main_parser() -> argparse.ArgumentParser:  # noqa: D103
     parser = argparse.ArgumentParser(
         description=(
             "A pyproject.toml-based build frontend. "
@@ -58,7 +61,7 @@ def main_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str]) -> None:
+def main(argv: list[str]) -> None:  # noqa: D103
     parser = main_parser()
     args = parser.parse_args(argv)
 
@@ -70,22 +73,22 @@ def main(argv: list[str]) -> None:
     res: SdistResult | WheelResult | EditableResult
 
     if "sdist" in distributions:
-        print("Building sdist...")
+        print("Building sdist...")  # noqa: T201
         res = frontend.build_sdist(outdir)
-        print(res.out)
-        print(res.err, file=sys.stderr)
+        print(res.out)  # noqa: T201
+        print(res.err, file=sys.stderr)  # noqa: T201
 
     if "wheel" in distributions:
-        print("Building wheel...")
+        print("Building wheel...")  # noqa: T201
         res = frontend.build_wheel(outdir)
-        print(res.out)
-        print(res.err, file=sys.stderr)
+        print(res.out)  # noqa: T201
+        print(res.err, file=sys.stderr)  # noqa: T201
 
     if "editable" in distributions:
-        print("Building editable wheel...")
+        print("Building editable wheel...")  # noqa: T201
         res = frontend.build_editable(outdir)
-        print(res.out)
-        print(res.err, file=sys.stderr)
+        print(res.out)  # noqa: T201
+        print(res.err, file=sys.stderr)  # noqa: T201
 
 
 if __name__ == "__main__":

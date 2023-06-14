@@ -1,4 +1,4 @@
-[build-system]
+[build-system]  # noqa: D100
 build-backend = "build"
 requires = [
 ]

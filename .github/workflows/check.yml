@@ -25,9 +25,9 @@ jobs:
           - "3.8"
           - "3.7"
         os:
-          - ubuntu-22.04
-          - windows-2022
-          - macos-12
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
     steps:
       - name: Setup python for tox
         uses: actions/setup-python@v4
@@ -71,10 +71,10 @@ jobs:
           - docs
           - pkg_meta
         os:
-          - ubuntu-22.04
-          - windows-2022
+          - ubuntu-latest
+          - windows-latest
         exclude:
-          - { os: windows-2022, tox_env: pkg_meta }
+          - { os: windows-latest, tox_env: pkg_meta }
     steps:
       - uses: actions/checkout@v3
         with:

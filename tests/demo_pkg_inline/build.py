@@ -2,10 +2,12 @@
 Please keep this file Python 2.7 compatible.
 See https://tox.readthedocs.io/en/rewrite/development.html#code-style-guide
 """
+from __future__ import annotations
 
 import os
 import sys
 import tarfile
+from pathlib import Path
 from textwrap import dedent
 from zipfile import ZipFile
 
@@ -13,16 +15,16 @@ name = "demo_pkg_inline"
 pkg_name = name.replace("_", "-")
 
 version = "1.0.0"
-dist_info = "{}-{}.dist-info".format(name, version)
-logic = "{}/__init__.py".format(name)
-metadata = "{}/METADATA".format(dist_info)
-wheel = "{}/WHEEL".format(dist_info)
-record = "{}/RECORD".format(dist_info)
+dist_info = f"{name}-{version}.dist-info"
+logic = f"{name}/__init__.py"
+metadata_file = f"{dist_info}/METADATA"
+wheel = f"{dist_info}/WHEEL"
+record = f"{dist_info}/RECORD"
 content = {
-    logic: "def do():\n    print('greetings from {}')".format(name),
+    logic: f"def do():\n    print('greetings from {name}')",
 }
 metadata = {
-    metadata: """
+    metadata_file: """
         Metadata-Version: 2.1
         Name: {}
         Version: {}
@@ -35,7 +37,8 @@ metadata = {
 
         UNKNOWN
        """.format(
-        pkg_name, version
+        pkg_name,
+        version,
     ),
     wheel: """
         Wheel-Version: 1.0
@@ -43,9 +46,11 @@ metadata = {
         Root-Is-Purelib: true
         Tag: py{}-none-any
        """.format(
-        name, version, sys.version_info[0]
+        name,
+        version,
+        sys.version_info[0],
     ),
-    "{}/top_level.txt".format(dist_info): name,
+    f"{dist_info}/top_level.txt": name,
     record: """
         {0}/__init__.py,,
         {1}/METADATA,,
@@ -53,70 +58,81 @@ metadata = {
         {1}/top_level.txt,,
         {1}/RECORD,,
        """.format(
-        name, dist_info
+        name,
+        dist_info,
     ),
 }
 
 
-def build_wheel(wheel_directory, metadata_directory=None, config_settings=None):  # noqa: U100
-    base_name = "{}-{}-py{}-none-any.whl".format(name, version, sys.version_info[0])
-    path = os.path.join(wheel_directory, base_name)
-    with ZipFile(path, "w") as zip_file_handler:
+def build_wheel(
+    wheel_directory: str,
+    metadata_directory: str | None = None,
+    config_settings: dict[str, str] | None = None,  # noqa: ARG001
+) -> str:
+    base_name = f"{name}-{version}-py{sys.version_info[0]}-none-any.whl"
+    path = Path(wheel_directory) / base_name
+    with ZipFile(str(path), "w") as zip_file_handler:
         for arc_name, data in content.items():  # pragma: no branch
             zip_file_handler.writestr(arc_name, dedent(data).strip())
         if metadata_directory is not None:
             for sub_directory, _, filenames in os.walk(metadata_directory):
                 for filename in filenames:
                     zip_file_handler.write(
-                        os.path.join(metadata_directory, sub_directory, filename),
-                        os.path.join(sub_directory, filename),
+                        str(Path(metadata_directory) / sub_directory / filename),
+                        str(Path(sub_directory) / filename),
                     )
         else:
             for arc_name, data in metadata.items():  # pragma: no branch
                 zip_file_handler.writestr(arc_name, dedent(data).strip())
-    print("created wheel {}".format(path))
+    print(f"created wheel {path}")  # noqa: T201
     return base_name
 
 
-def get_requires_for_build_wheel(config_settings=None):  # noqa: U100
+def get_requires_for_build_wheel(config_settings: dict[str, str] | None = None) -> list[str]:  # noqa: ARG001
     return []  # pragma: no cover # only executed in non-host pythons
 
 
-def build_sdist(sdist_directory, config_settings=None):  # noqa: U100
-    result = "{}-{}.tar.gz".format(name, version)
-    with tarfile.open(os.path.join(sdist_directory, result), "w:gz") as tar:
-        root = os.path.dirname(os.path.abspath(__file__))
-        tar.add(os.path.join(root, "build.py"), "build.py")
-        tar.add(os.path.join(root, "pyproject.toml"), "pyproject.toml")
+def build_sdist(sdist_directory: str, config_settings: dict[str, str] | None = None) -> str:  # noqa: ARG001
+    result = f"{name}-{version}.tar.gz"
+    with tarfile.open(str(Path(sdist_directory) / result), "w:gz") as tar:
+        root = Path(__file__).parent
+        tar.add(str(root / "build.py"), "build.py")
+        tar.add(str(root / "pyproject.toml"), "pyproject.toml")
     return result
 
 
-def get_requires_for_build_sdist(config_settings=None):  # noqa: U100
+def get_requires_for_build_sdist(config_settings: dict[str, str] | None = None) -> list[str]:  # noqa: ARG001
     return []  # pragma: no cover # only executed in non-host pythons
 
 
 if "HAS_REQUIRES_EDITABLE" in os.environ:
 
-    def get_requires_for_build_editable(config_settings=None):  # noqa: U100
-        return [1] if "REQUIRES_EDITABLE_BAD_RETURN" in os.environ else ["editables"]
+    def get_requires_for_build_editable(config_settings: dict[str, str] | None = None) -> list[str]:  # noqa: ARG001
+        return [1] if "REQUIRES_EDITABLE_BAD_RETURN" in os.environ else ["editables"]  # type: ignore[list-item]
 
 
 if "HAS_PREPARE_EDITABLE" in os.environ:
 
-    def prepare_metadata_for_build_editable(metadata_directory, config_settings=None):  # noqa: U100
-        dest = os.path.join(metadata_directory, dist_info)
-        os.mkdir(dest)
+    def prepare_metadata_for_build_editable(
+        metadata_directory: str,
+        config_settings: dict[str, str] | None = None,  # noqa: ARG001
+    ) -> str:
+        dest = Path(metadata_directory) / dist_info
+        dest.mkdir(parents=True)
         for arc_name, data in content.items():
             if arc_name.startswith(dist_info):
-                with open(os.path.join(metadata_directory, arc_name), "w") as file_handler:
-                    file_handler.write(dedent(data).strip())
-        print("created metadata {}".format(dest))
+                (dest.parent / arc_name).write_text(dedent(data).strip())
+        print(f"created metadata {dest}")  # noqa: T201
         if "PREPARE_EDITABLE_BAD" in os.environ:
-            return 1  # type: ignore # checking bad type on purpose
+            return 1  # type: ignore[return-value] # checking bad type on purpose
         return dist_info
 
 
-def build_editable(wheel_directory, metadata_directory=None, config_settings=None):
+def build_editable(
+    wheel_directory: str,
+    metadata_directory: str | None = None,
+    config_settings: dict[str, str] | None = None,
+) -> str:
     if "BUILD_EDITABLE_BAD" in os.environ:
-        return 1  # type: ignore # checking bad type on purpose
+        return 1  # type: ignore[return-value] # checking bad type on purpose
     return build_wheel(wheel_directory, metadata_directory, config_settings)
