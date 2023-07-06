@@ -117,7 +117,7 @@ def read_line(fd=0):
     content = bytearray()
     while True:
         char = os.read(fd, 1)
-        if len(char) == 0:
+        if not char:
             if not content:
                 raise EOFError("EOF without reading anything")  # we didn't get a line at all, let the caller know
             break
