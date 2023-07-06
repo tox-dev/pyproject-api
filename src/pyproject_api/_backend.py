@@ -112,17 +112,18 @@ def run(argv):
     return 0
 
 
-def read_line():
+def read_line(fd=0):
     # for some reason input() seems to break (hangs forever) so instead we read byte by byte the unbuffered stream
     content = bytearray()
     while True:
-        try:
-            char = os.read(0, 1)
-        except EOFError:  # pragma: no cover # when the stdout is closed without exit
-            break  # pragma: no cover
-        if char == b"\n":  # pragma: no cover
+        char = os.read(fd, 1)
+        if not char:
+            if not content:
+                raise EOFError("EOF without reading anything")  # we didn't get a line at all, let the caller know
             break
-        if char != b"\r":  # pragma: win32 cover
+        if char == b"\n":
+            break
+        if char != b"\r":
             content += char
     return content
 

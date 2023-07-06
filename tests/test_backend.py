@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from pyproject_api._backend import BackendProxy, run
+from pyproject_api._backend import BackendProxy, read_line, run
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -127,3 +128,37 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
     assert "Backend: run command dummy_command_b with args {'baz': 'qux'}" in captured.out
     assert "Backend: run command dummy_command_c with args {'win': 'wow'}" in captured.out
     assert "SystemExit: 2" in captured.err
+
+
+def test_read_line_success() -> None:
+    r, w = os.pipe()
+    try:
+        line_in = b"this is a line\r\n"
+        os.write(w, line_in)
+        line_out = read_line(fd=r)
+        assert line_out == bytearray(b"this is a line")
+    finally:
+        os.close(r)
+        os.close(w)
+
+
+def test_read_line_eof_before_newline() -> None:
+    r, w = os.pipe()
+    try:
+        line_in = b"this is a line"
+        os.write(w, line_in)
+        os.close(w)
+        line_out = read_line(fd=r)
+        assert line_out == bytearray(b"this is a line")
+    finally:
+        os.close(r)
+
+
+def test_read_line_eof_at_the_beginning() -> None:
+    r, w = os.pipe()
+    try:
+        os.close(w)
+        with pytest.raises(EOFError):
+            read_line(fd=r)
+    finally:
+        os.close(r)
