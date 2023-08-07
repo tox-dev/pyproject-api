@@ -8,17 +8,12 @@ from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import sleep
-from typing import Any, Dict, Iterator, List, NamedTuple, NoReturn, Optional, cast
+from typing import Any, Dict, Iterator, List, NamedTuple, NoReturn, Optional, TypedDict, cast
 from zipfile import ZipFile
 
 from packaging.requirements import Requirement
 
 from pyproject_api._util import ensure_empty_dir
-
-if sys.version_info >= (3, 8):  # pragma: no cover (py38+)
-    from typing import TypedDict
-else:  # pragma: no cover (py38+)
-    from typing_extensions import TypedDict
 
 if sys.version_info >= (3, 11):  # pragma: no cover (py311+)
     import tomllib

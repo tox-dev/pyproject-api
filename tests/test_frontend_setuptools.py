@@ -17,10 +17,7 @@ if TYPE_CHECKING:
     from _pytest.tmpdir import TempPathFactory
     from pytest_mock import MockerFixture
 
-if sys.version_info >= (3, 8):  # pragma: no cover (py38+)
-    from importlib.metadata import Distribution, EntryPoint
-else:  # pragma: no cover (<py38)
-    from importlib_metadata import Distribution, EntryPoint
+from importlib.metadata import Distribution, EntryPoint
 
 
 @pytest.fixture(scope="session")
@@ -78,7 +75,7 @@ def test_setuptools_prepare_metadata_for_build_wheel(frontend_setuptools: Subpro
     assert dist.metadata["Name"] == "demo"
     values = [v for k, v in dist.metadata.items() if k == "Requires-Dist"]  # type: ignore[attr-defined]
     # ignore because "PackageMetadata" has no attribute "items"
-    assert values == ["requests (>2)", "magic (>3)"]
+    assert values == ["requests >2", "magic >3"]
     assert isinstance(result.out, str)
     assert isinstance(result.err, str)
 
