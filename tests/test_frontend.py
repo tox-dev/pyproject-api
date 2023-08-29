@@ -192,6 +192,7 @@ def test_metadata_from_built_wheel(
     monkeypatch.chdir(tmp_path)
     path, out, err = frontend.metadata_from_built(tmp_path, target)
     assert path == tmp_path / "demo_pkg_inline-1.0.0.dist-info"
+    assert {p.name for p in path.iterdir()} == {"top_level.txt", "WHEEL", "RECORD", "METADATA"}
     assert f" build_{target}" in out
     assert not err
 
