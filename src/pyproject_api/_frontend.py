@@ -480,7 +480,6 @@ class Frontend(ABC):
                     if root.endswith(".dist-info"):
                         basename = root
                         zip_file.extract(name, extract_to)
-                        break
         if basename is None:  # pragma: no branch
             msg = f"no .dist-info found inside generated wheel {wheel}"
             raise RuntimeError(msg)

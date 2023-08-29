@@ -1,6 +1,10 @@
 Release History
 ===============
 
+v1.6.1 - (2023-08-29)
+---------------------
+- Fix :meth:`pyproject_api.Frontend.metadata_from_built` only extracts one of the dist info files.
+
 v1.6.0 - (2023-08-29)
 ---------------------
 - Remove ``build_<wheel|editable>`` from ``prepare_metadata_for_build_<wheel|editable>`` to allow separate config
