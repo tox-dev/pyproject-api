@@ -69,6 +69,7 @@ def test_setuptools_get_requires_for_build_wheel(frontend_setuptools: Subprocess
 def test_setuptools_prepare_metadata_for_build_wheel(frontend_setuptools: SubprocessFrontend, tmp_path: Path) -> None:
     meta = tmp_path / "meta"
     result = frontend_setuptools.prepare_metadata_for_build_wheel(metadata_directory=meta)
+    assert result is not None
     dist = Distribution.at(str(result.metadata))
     assert list(dist.entry_points) == [EntryPoint(name="demo_exe", value="demo:a", group="console_scripts")]
     assert dist.version == "1.0"
@@ -82,6 +83,7 @@ def test_setuptools_prepare_metadata_for_build_wheel(frontend_setuptools: Subpro
     # call it again regenerates it because frontend always deletes earlier content
     before = result.metadata.stat().st_mtime
     result = frontend_setuptools.prepare_metadata_for_build_wheel(metadata_directory=meta)
+    assert result is not None
     after = result.metadata.stat().st_mtime
     assert after > before
 

@@ -62,7 +62,7 @@ def build_wheel(
     base_name = f"{name}-{version}-py{sys.version_info[0]}-none-any.whl"
     path = Path(wheel_directory) / base_name
     with ZipFile(str(path), "w") as zip_file_handler:
-        for arc_name, data in content.items():  # pragma: no branch
+        for arc_name, data in content.items():
             zip_file_handler.writestr(arc_name, dedent(data).strip())
         if metadata_directory is not None:
             for sub_directory, _, filenames in os.walk(metadata_directory):
@@ -72,7 +72,7 @@ def build_wheel(
                         str(Path(sub_directory) / filename),
                     )
         else:
-            for arc_name, data in metadata.items():  # pragma: no branch
+            for arc_name, data in metadata.items():
                 zip_file_handler.writestr(arc_name, dedent(data).strip())
     print(f"created wheel {path}")  # noqa: T201
     return base_name
@@ -109,9 +109,8 @@ if "HAS_PREPARE_EDITABLE" in os.environ:
     ) -> str:
         dest = Path(metadata_directory) / dist_info
         dest.mkdir(parents=True)
-        for arc_name, data in content.items():
-            if arc_name.startswith(dist_info):
-                (dest.parent / arc_name).write_text(dedent(data).strip())
+        for arc_name, data in metadata.items():
+            (dest.parent / arc_name).write_text(dedent(data).strip())
         print(f"created metadata {dest}")  # noqa: T201
         if "PREPARE_EDITABLE_BAD" in os.environ:
             return 1  # type: ignore[return-value] # checking bad type on purpose

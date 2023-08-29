@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import sleep
-from typing import Any, Dict, Iterator, List, NamedTuple, NoReturn, Optional, TypedDict, cast
+from typing import Any, Dict, Iterator, List, Literal, NamedTuple, NoReturn, Optional, TypedDict, cast
 from zipfile import ZipFile
 
 from packaging.requirements import Requirement
@@ -314,7 +314,7 @@ class Frontend(ABC):
         self,
         metadata_directory: Path,
         config_settings: ConfigSettings | None = None,
-    ) -> MetadataForBuildWheelResult:
+    ) -> MetadataForBuildWheelResult | None:
         """
         Build wheel metadata (per PEP-517).
 
@@ -331,12 +331,10 @@ class Frontend(ABC):
                 config_settings=config_settings,
             )
         if basename is None:
-            # if backend does not provide it acquire it from the wheel
-            basename, err, out = self._metadata_from_built_wheel(config_settings, metadata_directory, "build_wheel")
+            return None
         if not isinstance(basename, str):
             self._unexpected_response("prepare_metadata_for_build_wheel", basename, str, out, err)
-        result = metadata_directory / basename
-        return MetadataForBuildWheelResult(result, out, err)
+        return MetadataForBuildWheelResult(metadata_directory / basename, out, err)
 
     def _check_metadata_dir(self, metadata_directory: Path) -> None:
         if metadata_directory == self._root:
@@ -350,7 +348,7 @@ class Frontend(ABC):
         self,
         metadata_directory: Path,
         config_settings: ConfigSettings | None = None,
-    ) -> MetadataForBuildEditableResult:
+    ) -> MetadataForBuildEditableResult | None:
         """
         Build editable wheel metadata (per PEP-660).
 
@@ -359,7 +357,7 @@ class Frontend(ABC):
         :return: metadata generation result
         """
         self._check_metadata_dir(metadata_directory)
-        basename = None
+        basename: str | None = None
         if self.optional_hooks["prepare_metadata_for_build_editable"]:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_editable",
@@ -367,8 +365,7 @@ class Frontend(ABC):
                 config_settings=config_settings,
             )
         if basename is None:
-            # if backend does not provide it acquire it from the wheel
-            basename, err, out = self._metadata_from_built_wheel(config_settings, metadata_directory, "build_editable")
+            return None
         if not isinstance(basename, str):
             self._unexpected_response("prepare_metadata_for_build_wheel", basename, str, out, err)
         result = metadata_directory / basename
@@ -453,35 +450,41 @@ class Frontend(ABC):
         msg = f"{cmd!r} on {self.backend!r} returned {got!r} but expected type {expected_type!r}"
         raise BackendFailed({"code": None, "exc_type": TypeError.__name__, "exc_msg": msg}, out, err)
 
-    def _metadata_from_built_wheel(
+    def metadata_from_built(
         self,
-        config_settings: ConfigSettings | None,
-        metadata_directory: Path | None,
-        cmd: str,
-    ) -> tuple[str, str, str]:
+        metadata_directory: Path,
+        target: Literal["wheel", "editable"],
+        config_settings: ConfigSettings | None = None,
+    ) -> tuple[Path, str, str]:
+        """
+        Create metadata from building the wheel (use when the prepare endpoints are not present or don't work).
+
+        :param metadata_directory: directory where to put the metadata
+        :param target: the type of wheel metadata to build
+        :param config_settings: config settings to pass in to the build endpoint
+        :return:
+        """
+        hook = getattr(self, f"build_{target}")
         with self._wheel_directory() as wheel_directory:
-            wheel_result = getattr(self, cmd)(
-                wheel_directory=wheel_directory,
-                config_settings=config_settings,
-                metadata_directory=None,  # let the backend populate the metadata
-            )
-            wheel = wheel_result.wheel
+            result: EditableResult | WheelResult = hook(wheel_directory, config_settings)
+            wheel = result.wheel
             if not wheel.exists():
                 msg = f"missing wheel file return by backed {wheel!r}"
                 raise RuntimeError(msg)
-            out, err = wheel_result.out, wheel_result.err
+            out, err = result.out, result.err
             extract_to = str(metadata_directory)
             basename = None
             with ZipFile(str(wheel), "r") as zip_file:
                 for name in zip_file.namelist():  # pragma: no branch
-                    path = Path(name)
-                    if path.parts[0].endswith(".dist-info"):
-                        basename = path.parts[0]
+                    root = Path(name).parts[0]
+                    if root.endswith(".dist-info"):
+                        basename = root
                         zip_file.extract(name, extract_to)
-            if basename is None:  # pragma: no branch
-                msg = f"no .dist-info found inside generated wheel {wheel}"
-                raise RuntimeError(msg)
-        return basename, err, out
+                        break
+        if basename is None:  # pragma: no branch
+            msg = f"no .dist-info found inside generated wheel {wheel}"
+            raise RuntimeError(msg)
+        return metadata_directory / basename, out, err
 
     @contextmanager
     def _wheel_directory(self) -> Iterator[Path]:

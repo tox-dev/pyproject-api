@@ -120,7 +120,7 @@ def read_line(fd=0):
         if not char:
             if not content:
                 raise EOFError("EOF without reading anything")  # we didn't get a line at all, let the caller know
-            break
+            break  # pragma: no cover
         if char == b"\n":
             break
         if char != b"\r":
