@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
-from typing import Callable
+from typing import Callable, Literal
 
 import pytest
 from packaging.requirements import Requirement
@@ -68,7 +68,7 @@ def demo_pkg_inline() -> Path:
 def test_backend_no_prepare_wheel(tmp_path: Path, demo_pkg_inline: Path) -> None:
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     result = frontend.prepare_metadata_for_build_wheel(tmp_path)
-    assert result.metadata.name == "demo_pkg_inline-1.0.0.dist-info"
+    assert result is None
 
 
 def test_backend_build_sdist_demo_pkg_inline(tmp_path: Path, demo_pkg_inline: Path) -> None:
@@ -178,10 +178,25 @@ def test_no_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str]
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(RuntimeError, match="missing wheel file return by backed *"):
-        frontend.prepare_metadata_for_build_wheel(tmp_path / "meta")
+        frontend.metadata_from_built(tmp_path, "wheel")
 
 
-def test_bad_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str], Path]) -> None:
+@pytest.mark.parametrize("target", ["wheel", "editable"])
+def test_metadata_from_built_wheel(
+    demo_pkg_inline: Path,
+    tmp_path: Path,
+    target: Literal["wheel", "editable"],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    monkeypatch.chdir(tmp_path)
+    path, out, err = frontend.metadata_from_built(tmp_path, target)
+    assert path == tmp_path / "demo_pkg_inline-1.0.0.dist-info"
+    assert f" build_{target}" in out
+    assert not err
+
+
+def test_bad_wheel_metadata_from_built_wheel(local_builder: Callable[[str], Path]) -> None:
     txt = """
     import sys
     from pathlib import Path
@@ -198,7 +213,7 @@ def test_bad_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
     with pytest.raises(RuntimeError, match="no .dist-info found inside generated wheel*"):
-        frontend.prepare_metadata_for_build_wheel(tmp_path / "meta")
+        frontend.metadata_from_built(tmp_path, "wheel")
 
 
 def test_create_no_pyproject(tmp_path: Path) -> None:
@@ -253,6 +268,7 @@ def test_backend_prepare_editable(tmp_path: Path, demo_pkg_inline: Path, monkeyp
     monkeypatch.delenv("PREPARE_EDITABLE_BAD", raising=False)
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     result = frontend.prepare_metadata_for_build_editable(tmp_path)
+    assert result is not None
     assert result.metadata.name == "demo_pkg_inline-1.0.0.dist-info"
     assert " prepare_metadata_for_build_editable " in result.out
     assert " build_editable " not in result.out
@@ -264,10 +280,7 @@ def test_backend_prepare_editable_miss(tmp_path: Path, demo_pkg_inline: Path, mo
     monkeypatch.delenv("BUILD_EDITABLE_BAD", raising=False)
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     result = frontend.prepare_metadata_for_build_editable(tmp_path)
-    assert result.metadata.name == "demo_pkg_inline-1.0.0.dist-info"
-    assert " prepare_metadata_for_build_editable " not in result.out
-    assert " build_editable " in result.out
-    assert not result.err
+    assert result is None
 
 
 def test_backend_prepare_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -287,10 +300,25 @@ def test_backend_prepare_editable_bad(tmp_path: Path, demo_pkg_inline: Path, mon
 
 def test_backend_build_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("BUILD_EDITABLE_BAD", raising=False)
+    monkeypatch.setenv("HAS_PREPARE_EDITABLE", "1")
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = frontend.build_editable(tmp_path)
+    meta = tmp_path / "meta"
+    res = frontend.prepare_metadata_for_build_editable(meta)
+    assert res is not None
+    metadata = res.metadata
+    assert metadata is not None
+    assert metadata.name == "demo_pkg_inline-1.0.0.dist-info"
+    result = frontend.build_editable(tmp_path, metadata_directory=meta)
     assert result.wheel.name == "demo_pkg_inline-1.0.0-py3-none-any.whl"
     assert " build_editable " in result.out
+    assert not result.err
+
+
+def test_backend_build_wheel(tmp_path: Path, demo_pkg_inline: Path) -> None:
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    result = frontend.build_wheel(tmp_path)
+    assert result.wheel.name == "demo_pkg_inline-1.0.0-py3-none-any.whl"
+    assert " build_wheel " in result.out
     assert not result.err
 
 

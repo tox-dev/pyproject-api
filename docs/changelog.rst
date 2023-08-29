@@ -1,6 +1,29 @@
 Release History
 ===============
 
+v1.6.0 - (2023-08-29)
+---------------------
+- Remove ``build_<wheel|editable>`` from ``prepare_metadata_for_build_<wheel|editable>`` to allow separate config
+  parametrization and instead add :meth:`pyproject_api.Frontend.metadata_from_built` the user can call when the prepare
+  fails. Pass ``None`` for ``metadata_directory`` for such temporary wheel builds.
+
+v1.5.4 - (2023-08-17)
+---------------------
+- Make sure that the order of Requires-Dist does not matter
+
+v1.5.3 - (2023-07-06)
+---------------------
+- Fix ``read_line`` to raise ``EOFError`` if nothing was read
+
+v1.5.2 - (2023-06-14)
+---------------------
+- Use ruff for linting.
+- Drop 2.7 test run.
+
+v1.5.1 - (2023-03-12)
+---------------------
+- docs: set html_last_updated_fmt to format string
+
 v1.5.0 - (2023-01-17)
 ---------------------
 - When getting metadata from a built wheel, do not pass ``metadata_directory``
