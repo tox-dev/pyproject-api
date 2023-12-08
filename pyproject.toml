@@ -58,7 +58,7 @@ optional-dependencies.testing = [
   "setuptools>=68.1.2",
   "wheel>=0.41.2",
 ]
-urls.Homepage = "http://pyproject_api.readthedocs.org"
+urls.Homepage = "http://pyproject-api.readthedocs.io"
 urls.Source = "https://github.com/tox-dev/pyproject-api"
 urls.Tracker = "https://github.com/tox-dev/pyproject-api/issues"
 
