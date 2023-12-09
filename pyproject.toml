@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "hatchling.build"
 requires = [
-  "hatch-vcs>=0.3",
+  "hatch-vcs>=0.4",
   "hatchling>=1.18",
 ]
 
@@ -42,21 +42,21 @@ dynamic = [
   "version",
 ]
 dependencies = [
-  "packaging>=23.1",
+  "packaging>=23.2",
   'tomli>=2.0.1; python_version < "3.11"',
 ]
 optional-dependencies.docs = [
-  "furo>=2023.8.19",
+  "furo>=2023.9.10",
   "sphinx<7.2",
-  "sphinx-autodoc-typehints>=1.24",
+  "sphinx-autodoc-typehints>=1.25.2",
 ]
 optional-dependencies.testing = [
   "covdefaults>=2.3",
-  "pytest>=7.4",
+  "pytest>=7.4.3",
   "pytest-cov>=4.1",
-  "pytest-mock>=3.11.1",
-  "setuptools>=68.1.2",
-  "wheel>=0.41.2",
+  "pytest-mock>=3.12",
+  "setuptools>=69.0.2",
+  "wheel>=0.42",
 ]
 urls.Homepage = "http://pyproject-api.readthedocs.io"
 urls.Source = "https://github.com/tox-dev/pyproject-api"
