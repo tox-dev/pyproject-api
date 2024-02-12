@@ -175,7 +175,7 @@ class Frontend(ABC):
     #: backend requirements when the ``pyproject.toml`` does not specify it
     LEGACY_REQUIRES: tuple[Requirement, ...] = (Requirement("setuptools >= 40.8.0"), Requirement("wheel"))
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         root: Path,
         backend_paths: tuple[Path, ...],
@@ -487,7 +487,7 @@ class Frontend(ABC):
         return metadata_directory / basename, out, err
 
     @contextmanager
-    def _wheel_directory(self) -> Iterator[Path]:
+    def _wheel_directory(self) -> Iterator[Path]:  # noqa: PLR6301
         with TemporaryDirectory() as wheel_directory:
             yield Path(wheel_directory)
 

@@ -59,7 +59,7 @@ if TYPE_CHECKING:
         ),
     ],
 )
-def test_parse_args(  # noqa: PLR0913
+def test_parse_args(
     mocker: pytest_mock.MockerFixture,
     capsys: pytest.CaptureFixture[str],
     cli_args: list[str],

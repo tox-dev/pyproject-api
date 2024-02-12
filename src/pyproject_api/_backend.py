@@ -1,4 +1,5 @@
-"""Handles communication on the backend side between frontend and backend
+"""
+Handles communication on the backend side between frontend and backend.
 
 Please keep this file Python 2.7 compatible.
 See https://tox.readthedocs.io/en/rewrite/development.html#code-style-guide
@@ -8,13 +9,14 @@ from __future__ import print_function
 
 import importlib
 import json
+import locale
 import os
 import sys
 import traceback
 
 
-class MissingCommand(TypeError):
-    """Missing command"""
+class MissingCommand(TypeError):  # noqa: N818
+    """Missing command."""
 
 
 class BackendProxy:
@@ -29,13 +31,14 @@ class BackendProxy:
     def __call__(self, name, *args, **kwargs):
         on_object = self if name.startswith("_") else self.backend
         if not hasattr(on_object, name):
-            raise MissingCommand("{!r} has no attribute {!r}".format(on_object, name))
+            msg = "{!r} has no attribute {!r}".format(on_object, name)
+            raise MissingCommand(msg)
         return getattr(on_object, name)(*args, **kwargs)
 
     def __str__(self):
         return "{}(backend={})".format(self.__class__.__name__, self.backend)
 
-    def _exit(self):
+    def _exit(self):  # noqa: PLR6301
         return 0
 
     def _optional_hooks(self):
@@ -57,11 +60,11 @@ def flush():
     sys.stdout.flush()
 
 
-def run(argv):
+def run(argv):  # noqa: C901, PLR0912, PLR0915
     reuse_process = argv[0].lower() == "true"
 
     try:
-        backend_proxy = BackendProxy(argv[1], None if len(argv) == 2 else argv[2])
+        backend_proxy = BackendProxy(argv[1], None if len(argv) == 2 else argv[2])  # noqa: PLR2004
     except BaseException:
         print("failed to start backend", file=sys.stderr)
         raise
@@ -75,11 +78,12 @@ def run(argv):
             continue
         flush()  # flush any output generated before
         try:
-            if sys.version_info[0] == 2:  # pragma: no branch # python 2 does not support loading from bytearray
+            # python 2 does not support loading from bytearray
+            if sys.version_info[0] == 2:  # pragma: no branch # noqa: PLR2004
                 content = content.decode()  # pragma: no cover
             parsed_message = json.loads(content)
             result_file = parsed_message["result"]
-        except Exception:
+        except Exception:  # noqa: BLE001
             # ignore messages that are not valid JSON and contain a valid result path
             print("Backend: incorrect request to backend: {}".format(content), file=sys.stderr)
             flush()
@@ -92,7 +96,7 @@ def run(argv):
                 result["return"] = outcome
                 if cmd == "_exit":
                     break
-            except BaseException as exception:
+            except BaseException as exception:  # noqa: BLE001
                 result["code"] = exception.code if isinstance(exception, SystemExit) else 1
                 result["exc_type"] = exception.__class__.__name__
                 result["exc_msg"] = str(exception)
@@ -100,9 +104,10 @@ def run(argv):
                     traceback.print_exc()
             finally:
                 try:
-                    with open(result_file, "w") as file_handler:
+                    encoding = locale.getpreferredencoding(do_setlocale=False)
+                    with open(result_file, "w", encoding=encoding) as file_handler:  # noqa: PTH123
                         json.dump(result, file_handler)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     traceback.print_exc()
                 finally:
                     # used as done marker by frontend
@@ -120,7 +125,8 @@ def read_line(fd=0):
         char = os.read(fd, 1)
         if not char:
             if not content:
-                raise EOFError("EOF without reading anything")  # we didn't get a line at all, let the caller know
+                msg = "EOF without reading anything"
+                raise EOFError(msg)  # we didn't get a line at all, let the caller know
             break  # pragma: no cover
         if char == b"\n":
             break
