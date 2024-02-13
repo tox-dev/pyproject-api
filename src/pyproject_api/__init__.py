@@ -23,18 +23,18 @@ from ._via_fresh_subprocess import SubprocessFrontend
 __version__ = version
 
 __all__ = [
-    "__version__",
-    "Frontend",
     "BackendFailed",
     "CmdStatus",
+    "EditableResult",
+    "Frontend",
+    "MetadataForBuildEditableResult",
+    "MetadataForBuildWheelResult",
+    "OptionalHooks",
+    "RequiresBuildEditableResult",
     "RequiresBuildSdistResult",
     "RequiresBuildWheelResult",
-    "RequiresBuildEditableResult",
-    "MetadataForBuildWheelResult",
-    "MetadataForBuildEditableResult",
     "SdistResult",
-    "WheelResult",
-    "EditableResult",
     "SubprocessFrontend",
-    "OptionalHooks",
+    "WheelResult",
+    "__version__",
 ]

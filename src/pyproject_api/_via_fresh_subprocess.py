@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from contextlib import contextmanager
-from subprocess import PIPE, Popen
+from subprocess import PIPE, Popen  # noqa: S404
 from threading import Thread
 from typing import IO, TYPE_CHECKING, Any, Iterator, Tuple, cast
 
