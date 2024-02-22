@@ -83,12 +83,13 @@ lint.ignore = [
   "ISC001", # Conflict with formatter
   "CPY",    # No copyright statements
 ]
-format.preview = true
 lint.preview = true
+format.preview = true
 format.docstring-code-format = true
 format.docstring-code-line-length = 100
 [tool.ruff.lint.per-file-ignores]
 "src/pyproject_api/_backend.py" = ["ANN", "UP", "T201", "I002"] # no type annotations
+"src/pyproject_api/_backend.pyi" = ["E301", "E302"] # https://github.com/astral-sh/ruff/issues/10077
 "tests/**/*.py" = [
   "S101",    # asserts allowed in tests...
   "FBT",     # don"t care about booleans as positional arguments in tests
