@@ -17,8 +17,12 @@ keywords = [
   "virtual",
 ]
 license = "MIT"
-maintainers = [{ name = "Bernát Gábor", email = "gaborjbernat@gmail.com" }]
-authors = [{ name = "Bernát Gábor", email = "gaborjbernat@gmail.com" }]
+maintainers = [
+  { name = "Bernát Gábor", email = "gaborjbernat@gmail.com" },
+]
+authors = [
+  { name = "Bernát Gábor", email = "gaborjbernat@gmail.com" },
+]
 requires-python = ">=3.8"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -43,7 +47,7 @@ dynamic = [
 ]
 dependencies = [
   "packaging>=23.2",
-  'tomli>=2.0.1; python_version < "3.11"',
+  "tomli>=2.0.1; python_version<'3.11'",
 ]
 optional-dependencies.docs = [
   "furo>=2023.9.10",
@@ -69,8 +73,14 @@ version.source = "vcs"
 [tool.ruff]
 line-length = 120
 target-version = "py38"
-lint.isort = { known-first-party = ["pyproject_api"], required-imports = ["from __future__ import annotations"] }
-lint.select = ["ALL"]
+lint.isort = { known-first-party = [
+  "pyproject_api",
+], required-imports = [
+  "from __future__ import annotations",
+] }
+lint.select = [
+  "ALL",
+]
 lint.ignore = [
   "INP001", # no implicit namespaces here
   "ANN101", # Missing type annotation for `self` in method
@@ -88,8 +98,16 @@ format.preview = true
 format.docstring-code-format = true
 format.docstring-code-line-length = 100
 [tool.ruff.lint.per-file-ignores]
-"src/pyproject_api/_backend.py" = ["ANN", "UP", "T201", "I002"] # no type annotations
-"src/pyproject_api/_backend.pyi" = ["E301", "E302"] # https://github.com/astral-sh/ruff/issues/10077
+"src/pyproject_api/_backend.py" = [
+  "ANN",
+  "UP",
+  "T201",
+  "I002",
+] # no type annotations
+"src/pyproject_api/_backend.pyi" = [
+  "E301",
+  "E302",
+] # https://github.com/astral-sh/ruff/issues/10077
 "tests/**/*.py" = [
   "S101",    # asserts allowed in tests...
   "FBT",     # don"t care about booleans as positional arguments in tests
@@ -118,12 +136,19 @@ paths.source = [
   "*/src",
   "*\\src",
 ]
-report.omit = []
+report.omit = [
+]
 run.parallel = true
-run.plugins = ["covdefaults"]
+run.plugins = [
+  "covdefaults",
+]
 
 [tool.mypy]
 python_version = "3.11"
 show_error_codes = true
 strict = true
-overrides = [{ module = ["virtualenv.*"], ignore_missing_imports = true }]
+overrides = [
+  { module = [
+    "virtualenv.*",
+  ], ignore_missing_imports = true },
+]
