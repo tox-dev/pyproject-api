@@ -61,9 +61,3 @@ Wheel
 Fresh subprocess frontend
 -------------------------
 .. autoclass:: SubprocessFrontend
-
-.. toctree::
-   :hidden:
-
-   self
-   changelog
