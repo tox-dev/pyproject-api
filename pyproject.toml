@@ -38,6 +38,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Testing",
   "Topic :: Utilities",
@@ -60,6 +61,7 @@ optional-dependencies.testing = [
   "pytest-mock>=3.14",
   "setuptools>=70.1",
 ]
+urls.Changelog = "https://github.com/tox-dev/pyproject-api/releases"
 urls.Homepage = "https://pyproject-api.readthedocs.io"
 urls.Source = "https://github.com/tox-dev/pyproject-api"
 urls.Tracker = "https://github.com/tox-dev/pyproject-api/issues"
@@ -121,6 +123,9 @@ lint.preview = true
 builtin = "clear,usage,en-GB_to_en-US"
 write-changes = true
 count = true
+
+[tool.pyproject-fmt]
+max_supported_python = "3.13"
 
 [tool.coverage]
 html.show_contexts = true
