@@ -2,7 +2,7 @@
 build-backend = "hatchling.build"
 requires = [
   "hatch-vcs>=0.4",
-  "hatchling>=1.18",
+  "hatchling>=1.24.2",
 ]
 
 [project]
@@ -46,23 +46,21 @@ dynamic = [
   "version",
 ]
 dependencies = [
-  "packaging>=23.2",
+  "packaging>=24.1",
   "tomli>=2.0.1; python_version<'3.11'",
 ]
 optional-dependencies.docs = [
-  "furo>=2023.9.10",
-  "sphinx<7.2",
-  "sphinx-autodoc-typehints>=1.25.2",
+  "furo>=2024.5.6",
+  "sphinx-autodoc-typehints>=2.2.1",
 ]
 optional-dependencies.testing = [
   "covdefaults>=2.3",
-  "pytest>=7.4.3",
-  "pytest-cov>=4.1",
-  "pytest-mock>=3.12",
-  "setuptools>=69.0.2",
-  "wheel>=0.42",
+  "pytest>=8.2.2",
+  "pytest-cov>=5",
+  "pytest-mock>=3.14",
+  "setuptools>=70.1",
 ]
-urls.Homepage = "http://pyproject-api.readthedocs.io"
+urls.Homepage = "https://pyproject-api.readthedocs.io"
 urls.Source = "https://github.com/tox-dev/pyproject-api"
 urls.Tracker = "https://github.com/tox-dev/pyproject-api/issues"
 
@@ -81,7 +79,7 @@ lint.select = [
 ]
 lint.ignore = [
   "ANN101", # Missing type annotation for `self` in method
-  "ANN102", # Missing type annotation for `cls` in classmethod"
+  "ANN102", # Missing type annotation for `cls` in classmethod
   "ANN401", # Dynamically typed expressions
   "COM812", # Conflict with formatter
   "CPY",    # No copyright statements
