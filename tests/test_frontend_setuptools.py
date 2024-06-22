@@ -6,7 +6,6 @@ from stat import S_IWGRP, S_IWOTH, S_IWUSR
 from typing import TYPE_CHECKING, Iterator, NamedTuple
 
 import pytest
-from packaging.requirements import Requirement
 
 from pyproject_api._frontend import BackendFailed
 from pyproject_api._via_fresh_subprocess import SubprocessFrontend
@@ -59,9 +58,7 @@ def test_setuptools_get_requires_for_build_sdist(frontend_setuptools: Subprocess
 
 def test_setuptools_get_requires_for_build_wheel(frontend_setuptools: SubprocessFrontend) -> None:
     result = frontend_setuptools.get_requires_for_build_wheel()
-    for left, right in zip(result.requires, (Requirement("wheel"),)):
-        assert isinstance(left, Requirement)
-        assert str(left) == str(right)
+    assert not result.requires
     assert isinstance(result.out, str)
     assert isinstance(result.err, str)
 
