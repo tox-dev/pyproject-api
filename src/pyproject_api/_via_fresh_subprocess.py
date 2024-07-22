@@ -36,7 +36,7 @@ class SubprocessCmdStatus(CmdStatus, Thread):
 class SubprocessFrontend(Frontend):
     """A frontend that creates fresh subprocess at every call to communicate with the backend."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         root: Path,
         backend_paths: tuple[Path, ...],

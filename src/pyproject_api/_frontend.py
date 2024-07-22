@@ -440,7 +440,7 @@ class Frontend(ABC):
             self._unexpected_response("build_editable", basename, str, out, err)
         return EditableResult(wheel_directory / basename, out, err)
 
-    def _unexpected_response(  # noqa: PLR0913
+    def _unexpected_response(
         self,
         cmd: str,
         got: Any,

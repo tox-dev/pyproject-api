@@ -11,7 +11,7 @@ from pyproject_api._frontend import BackendFailed
 from pyproject_api._via_fresh_subprocess import SubprocessFrontend
 
 
-@pytest.fixture()
+@pytest.fixture
 def local_builder(tmp_path: Path) -> Callable[[str], Path]:
     def _f(content: str) -> Path:
         toml = '[build-system]\nrequires=[]\nbuild-backend = "build_tester"\nbackend-path=["."]'
