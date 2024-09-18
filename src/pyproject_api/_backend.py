@@ -5,8 +5,6 @@ Please keep this file Python 2.7 compatible.
 See https://tox.readthedocs.io/en/rewrite/development.html#code-style-guide
 """
 
-from __future__ import print_function
-
 import importlib
 import json
 import locale
@@ -31,12 +29,12 @@ class BackendProxy:
     def __call__(self, name, *args, **kwargs):
         on_object = self if name.startswith("_") else self.backend
         if not hasattr(on_object, name):
-            msg = "{!r} has no attribute {!r}".format(on_object, name)
+            msg = f"{on_object!r} has no attribute {name!r}"
             raise MissingCommand(msg)
         return getattr(on_object, name)(*args, **kwargs)
 
     def __str__(self):
-        return "{}(backend={})".format(self.__class__.__name__, self.backend)
+        return f"{self.__class__.__name__}(backend={self.backend})"
 
     def _exit(self):  # noqa: PLR6301
         return 0
@@ -69,7 +67,7 @@ def run(argv):  # noqa: C901, PLR0912, PLR0915
         print("failed to start backend", file=sys.stderr)
         raise
     else:
-        print("started backend {}".format(backend_proxy), file=sys.stdout)
+        print(f"started backend {backend_proxy}", file=sys.stdout)
     finally:
         flush()  # pragma: no branch
     while True:
@@ -85,7 +83,7 @@ def run(argv):  # noqa: C901, PLR0912, PLR0915
             result_file = parsed_message["result"]
         except Exception:  # noqa: BLE001
             # ignore messages that are not valid JSON and contain a valid result path
-            print("Backend: incorrect request to backend: {}".format(content), file=sys.stderr)
+            print(f"Backend: incorrect request to backend: {content}", file=sys.stderr)
             flush()
         else:
             result = {}
@@ -111,7 +109,7 @@ def run(argv):  # noqa: C901, PLR0912, PLR0915
                     traceback.print_exc()
                 finally:
                     # used as done marker by frontend
-                    print("Backend: Wrote response {} to {}".format(result, result_file))
+                    print(f"Backend: Wrote response {result} to {result_file}")
                     flush()  # pragma: no branch
         if reuse_process is False:  # pragma: no branch # no test for reuse process in root test env
             break
