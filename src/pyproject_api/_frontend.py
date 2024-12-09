@@ -276,7 +276,7 @@ class Frontend(ABC):
             result, out, err = [], "", ""
         if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
             self._unexpected_response("get_requires_for_build_sdist", result, "list of string", out, err)
-        return RequiresBuildSdistResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
+        return RequiresBuildSdistResult(tuple(Requirement(r) for r in cast("List[str]", result)), out, err)
 
     def get_requires_for_build_wheel(self, config_settings: ConfigSettings | None = None) -> RequiresBuildWheelResult:
         """
@@ -291,7 +291,7 @@ class Frontend(ABC):
             result, out, err = [], "", ""
         if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
             self._unexpected_response("get_requires_for_build_wheel", result, "list of string", out, err)
-        return RequiresBuildWheelResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
+        return RequiresBuildWheelResult(tuple(Requirement(r) for r in cast("List[str]", result)), out, err)
 
     def get_requires_for_build_editable(
         self,
@@ -309,7 +309,7 @@ class Frontend(ABC):
             result, out, err = [], "", ""
         if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
             self._unexpected_response("get_requires_for_build_editable", result, "list of string", out, err)
-        return RequiresBuildEditableResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
+        return RequiresBuildEditableResult(tuple(Requirement(r) for r in cast("List[str]", result)), out, err)
 
     def prepare_metadata_for_build_wheel(
         self,
