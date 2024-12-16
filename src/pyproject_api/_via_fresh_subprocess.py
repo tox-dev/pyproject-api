@@ -30,7 +30,7 @@ class SubprocessCmdStatus(CmdStatus, Thread):
         return self.process.returncode is not None
 
     def out_err(self) -> tuple[str, str]:
-        return cast(Tuple[str, str], self._out_err)
+        return cast("Tuple[str, str]", self._out_err)
 
 
 class SubprocessFrontend(Frontend):
@@ -71,7 +71,7 @@ class SubprocessFrontend(Frontend):
             cwd=self._root,
             env=env,
         )
-        cast(IO[str], process.stdin).write(f"{os.linesep}{msg}{os.linesep}")
+        cast("IO[str]", process.stdin).write(f"{os.linesep}{msg}{os.linesep}")
         yield SubprocessCmdStatus(process)
 
     def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
