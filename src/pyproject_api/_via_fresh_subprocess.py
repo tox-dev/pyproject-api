@@ -5,11 +5,12 @@ import sys
 from contextlib import contextmanager
 from subprocess import PIPE, Popen  # noqa: S404
 from threading import Thread
-from typing import IO, TYPE_CHECKING, Any, Iterator, Tuple, cast
+from typing import IO, TYPE_CHECKING, Any, cast
 
 from ._frontend import CmdStatus, Frontend
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
     from packaging.requirements import Requirement
@@ -30,7 +31,7 @@ class SubprocessCmdStatus(CmdStatus, Thread):
         return self.process.returncode is not None
 
     def out_err(self) -> tuple[str, str]:
-        return cast(Tuple[str, str], self._out_err)
+        return cast("tuple[str, str]", self._out_err)
 
 
 class SubprocessFrontend(Frontend):
@@ -71,7 +72,7 @@ class SubprocessFrontend(Frontend):
             cwd=self._root,
             env=env,
         )
-        cast(IO[str], process.stdin).write(f"{os.linesep}{msg}{os.linesep}")
+        cast("IO[str]", process.stdin).write(f"{os.linesep}{msg}{os.linesep}")
         yield SubprocessCmdStatus(process)
 
     def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:

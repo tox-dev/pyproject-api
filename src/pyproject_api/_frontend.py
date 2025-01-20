@@ -9,12 +9,15 @@ from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import sleep
-from typing import Any, Dict, Iterator, List, Literal, NamedTuple, NoReturn, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, NoReturn, Optional, TypedDict, cast
 from zipfile import ZipFile
 
 from packaging.requirements import Requirement
 
 from pyproject_api._util import ensure_empty_dir
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 if sys.version_info >= (3, 11):  # pragma: no cover (py311+)
     import tomllib
@@ -22,7 +25,7 @@ else:  # pragma: no cover (py311+)
     import tomli as tomllib
 
 _HERE = Path(__file__).parent
-ConfigSettings = Optional[Dict[str, Any]]
+ConfigSettings = Optional[dict[str, Any]]
 
 
 class OptionalHooks(TypedDict, total=True):
@@ -276,7 +279,7 @@ class Frontend(ABC):
             result, out, err = [], "", ""
         if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
             self._unexpected_response("get_requires_for_build_sdist", result, "list of string", out, err)
-        return RequiresBuildSdistResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
+        return RequiresBuildSdistResult(tuple(Requirement(r) for r in cast("list[str]", result)), out, err)
 
     def get_requires_for_build_wheel(self, config_settings: ConfigSettings | None = None) -> RequiresBuildWheelResult:
         """
@@ -291,7 +294,7 @@ class Frontend(ABC):
             result, out, err = [], "", ""
         if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
             self._unexpected_response("get_requires_for_build_wheel", result, "list of string", out, err)
-        return RequiresBuildWheelResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
+        return RequiresBuildWheelResult(tuple(Requirement(r) for r in cast("list[str]", result)), out, err)
 
     def get_requires_for_build_editable(
         self,
@@ -309,7 +312,7 @@ class Frontend(ABC):
             result, out, err = [], "", ""
         if not isinstance(result, list) or not all(isinstance(i, str) for i in result):
             self._unexpected_response("get_requires_for_build_editable", result, "list of string", out, err)
-        return RequiresBuildEditableResult(tuple(Requirement(r) for r in cast(List[str], result)), out, err)
+        return RequiresBuildEditableResult(tuple(Requirement(r) for r in cast("list[str]", result)), out, err)
 
     def prepare_metadata_for_build_wheel(
         self,
