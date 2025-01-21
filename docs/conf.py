@@ -1,11 +1,20 @@
 # noqa: D100
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+from sphinx.domains.python import PythonDomain
+
 from pyproject_api import __version__
 
+if TYPE_CHECKING:
+    from docutils.nodes import Element
+    from sphinx.application import Sphinx
+    from sphinx.builders import Builder
+    from sphinx.environment import BuildEnvironment
 project = name = "pyproject_api"
 company = "tox-dev"
-copyright = f"{company}"  # noqa: A001
+project_copyright = f"{company}"
 version, release = __version__, __version__.split("+")[0]
 
 extensions = [
@@ -38,3 +47,26 @@ intersphinx_mapping = {
 
 nitpicky = True
 nitpick_ignore = []
+
+
+def setup(app: Sphinx) -> None:  # noqa: D103
+    class PatchedPythonDomain(PythonDomain):
+        def resolve_xref(  # noqa: PLR0913,PLR0917
+            self,
+            env: BuildEnvironment,
+            fromdocname: str,
+            builder: Builder,
+            type: str,  # noqa: A002
+            target: str,
+            node: resolve_xref,
+            contnode: Element,
+        ) -> Element:
+            # fixup some wrongly resolved mappings
+            mapping = {
+                "pathlib._local.Path": "pathlib.Path",
+            }
+            if target in mapping:
+                target = node["reftarget"] = mapping[target]
+            return super().resolve_xref(env, fromdocname, builder, type, target, node, contnode)
+
+    app.add_domain(PatchedPythonDomain, override=True)

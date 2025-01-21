@@ -177,7 +177,7 @@ def test_no_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str]
     tmp_path = local_builder(txt)
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
-    with pytest.raises(RuntimeError, match="missing wheel file return by backed *"):
+    with pytest.raises(RuntimeError, match=r"missing wheel file return by backed *"):
         frontend.metadata_from_built(tmp_path, "wheel")
 
 
@@ -213,7 +213,7 @@ def test_bad_wheel_metadata_from_built_wheel(local_builder: Callable[[str], Path
     tmp_path = local_builder(txt)
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
 
-    with pytest.raises(RuntimeError, match="no .dist-info found inside generated wheel*"):
+    with pytest.raises(RuntimeError, match=r"no .dist-info found inside generated wheel*"):
         frontend.metadata_from_built(tmp_path, "wheel")
 
 
