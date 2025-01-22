@@ -57,8 +57,11 @@ jobs:
         run: uv python install --python-preference only-managed ${{ matrix.env }}
       - name: Setup test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.env }}
+        env:
+          UV_PYTHON_PREFERENCE: only-managed
       - name: Run test suite
         run: tox run --skip-pkg-install -e ${{ matrix.env }}
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"
           DIFF_AGAINST: HEAD
+          UV_PYTHON_PREFERENCE: only-managed
