@@ -46,19 +46,19 @@ dynamic = [
   "version",
 ]
 dependencies = [
-  "packaging>=24.2",
+  "packaging>=25",
   "tomli>=2.2.1; python_version<'3.11'",
 ]
 optional-dependencies.docs = [
   "furo>=2024.8.6",
-  "sphinx-autodoc-typehints>=3",
+  "sphinx-autodoc-typehints>=3.2",
 ]
 optional-dependencies.testing = [
   "covdefaults>=2.3",
-  "pytest>=8.3.4",
-  "pytest-cov>=6",
+  "pytest>=8.3.5",
+  "pytest-cov>=6.1.1",
   "pytest-mock>=3.14",
-  "setuptools>=75.8",
+  "setuptools>=80.3.1",
 ]
 urls.Changelog = "https://github.com/tox-dev/pyproject-api/releases"
 urls.Homepage = "https://pyproject-api.readthedocs.io"
