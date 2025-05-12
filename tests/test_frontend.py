@@ -225,7 +225,7 @@ def test_create_no_pyproject(tmp_path: Path) -> None:
     assert result[2] == "setuptools.build_meta"
     assert result[3] == "__legacy__"
     assert all(isinstance(i, Requirement) for i in result[4])
-    assert [str(i) for i in result[4]] == ["setuptools>=40.8.0", "wheel"]
+    assert [str(i) for i in result[4]] == ["setuptools>=40.8.0"]
     assert result[5] is True
 
 

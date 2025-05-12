@@ -176,7 +176,7 @@ class Frontend(ABC):
     #: backend key when the ``pyproject.toml`` does not specify it
     LEGACY_BUILD_BACKEND: str = "setuptools.build_meta:__legacy__"
     #: backend requirements when the ``pyproject.toml`` does not specify it
-    LEGACY_REQUIRES: tuple[Requirement, ...] = (Requirement("setuptools >= 40.8.0"), Requirement("wheel"))
+    LEGACY_REQUIRES: tuple[Requirement, ...] = (Requirement("setuptools >= 40.8.0"),)
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
