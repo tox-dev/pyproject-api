@@ -47,7 +47,7 @@ dynamic = [
 ]
 dependencies = [
   "packaging>=25",
-  "tomli>=2.2.1; python_version < '3.11'",
+  "tomli>=2.2.1; python_version<'3.11'",
 ]
 optional-dependencies.docs = [
   "furo>=2025.7.19",
