@@ -23,7 +23,7 @@ maintainers = [
 authors = [
   { name = "Bernát Gábor", email = "gaborjbernat@gmail.com" },
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Framework :: tox",
@@ -33,11 +33,11 @@ classifiers = [
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Testing",
   "Topic :: Utilities",
@@ -47,17 +47,17 @@ dynamic = [
 ]
 dependencies = [
   "packaging>=25",
-  "tomli>=2.2.1; python_version<'3.11'",
+  "tomli>=2.3; python_version<'3.11'",
 ]
 optional-dependencies.docs = [
-  "furo>=2025.7.19",
-  "sphinx-autodoc-typehints>=3.2",
+  "furo>=2025.9.25",
+  "sphinx-autodoc-typehints>=3.5.1",
 ]
 optional-dependencies.testing = [
   "covdefaults>=2.3",
   "pytest>=8.4.2",
   "pytest-cov>=7",
-  "pytest-mock>=3.15",
+  "pytest-mock>=3.15.1",
   "setuptools>=80.9",
 ]
 urls.Changelog = "https://github.com/tox-dev/pyproject-api/releases"
@@ -120,9 +120,6 @@ lint.preview = true
 builtin = "clear,usage,en-GB_to_en-US"
 write-changes = true
 count = true
-
-[tool.pyproject-fmt]
-max_supported_python = "3.13"
 
 [tool.coverage]
 html.show_contexts = true
