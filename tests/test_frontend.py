@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
-from typing import Callable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import pytest
 from packaging.requirements import Requirement
 
 from pyproject_api._frontend import BackendFailed
 from pyproject_api._via_fresh_subprocess import SubprocessFrontend
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 @pytest.fixture
@@ -55,7 +58,7 @@ def test_empty_pyproject(tmp_path: Path) -> None:
     assert backend_paths == ()
     assert backend_module == "setuptools.build_meta"
     assert backend_obj == "__legacy__"
-    for left, right in zip(requires, (Requirement("setuptools>=40.8.0"), Requirement("wheel"))):
+    for left, right in zip(requires, (Requirement("setuptools>=40.8.0"), Requirement("wheel")), strict=False):
         assert isinstance(left, Requirement)
         assert str(left) == str(right)
 
@@ -98,7 +101,7 @@ def test_backend_obj(tmp_path: Path) -> None:
     (build / "api.py").write_text(dedent(api))
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
     result = frontend.get_requires_for_build_sdist()
-    for left, right in zip(result.requires, (Requirement("a"),)):
+    for left, right in zip(result.requires, (Requirement("a"),), strict=False):
         assert isinstance(left, Requirement)
         assert str(left) == str(right)
 

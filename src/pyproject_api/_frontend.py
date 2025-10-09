@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import sleep
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, NoReturn, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, NoReturn, TypedDict, cast
 from zipfile import ZipFile
 
 from packaging.requirements import Requirement
@@ -25,7 +25,7 @@ else:  # pragma: no cover (py311+)
     import tomli as tomllib
 
 _HERE = Path(__file__).parent
-ConfigSettings = Optional[dict[str, Any]]
+ConfigSettings = dict[str, Any] | None
 
 
 class OptionalHooks(TypedDict, total=True):
