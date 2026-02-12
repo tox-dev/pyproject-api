@@ -93,11 +93,11 @@ lint.per-file-ignores."src/pyproject_api/_backend.py" = [
   "I002",
   "T201",
   "UP",
-] # no type annotations
+]
 lint.per-file-ignores."src/pyproject_api/_backend.pyi" = [
   "E301",
   "E302",
-] # https://github.com/astral-sh/ruff/issues/10077
+]
 lint.per-file-ignores."tests/**/*.py" = [
   "D",       # don't care about documentation in tests
   "FBT",     # don't care about booleans as positional arguments in tests
@@ -132,8 +132,7 @@ paths.source = [
   "*/src",
   "*\\src",
 ]
-report.omit = [
-]
+report.omit = []
 run.parallel = true
 run.patch = [ "subprocess" ]
 run.plugins = [
