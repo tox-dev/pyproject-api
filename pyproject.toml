@@ -122,8 +122,11 @@ write-changes = true
 count = true
 
 [tool.coverage]
-html.show_contexts = true
-html.skip_covered = false
+run.parallel = true
+run.patch = [ "subprocess" ]
+run.plugins = [
+  "covdefaults",
+]
 paths.source = [
   "src",
   ".tox*/*/lib/python*/site-packages",
@@ -133,11 +136,8 @@ paths.source = [
   "*\\src",
 ]
 report.omit = []
-run.parallel = true
-run.patch = [ "subprocess" ]
-run.plugins = [
-  "covdefaults",
-]
+html.show_contexts = true
+html.skip_covered = false
 
 [tool.mypy]
 python_version = "3.12"
