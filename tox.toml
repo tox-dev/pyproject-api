@@ -75,8 +75,8 @@ commands = [
 
 [env.type]
 description = "run type check on code base"
-extras = [ "docs", "testing" ]
 deps = [ "ty>=0.0.17" ]
+extras = [ "docs", "testing" ]
 commands = [ [ "ty", "check", "--output-format", "concise", "--error-on-warning", "." ] ]
 
 [env.dev]
