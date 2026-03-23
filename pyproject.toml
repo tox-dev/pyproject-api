@@ -143,6 +143,9 @@ builtin = "clear,usage,en-GB_to_en-US"
 write-changes = true
 count = true
 
+[tool.ty]
+environment.python-version = "3.14"
+
 [tool.coverage]
 run.parallel = true
 run.patch = [ "subprocess" ]
@@ -160,6 +163,3 @@ paths.source = [
 report.omit = []
 html.show_contexts = true
 html.skip_covered = false
-
-[tool.ty]
-environment.python-version = "3.14"
