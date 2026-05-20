@@ -343,9 +343,7 @@ def test_backend_build_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monke
 def test_backend_failed_str_repr() -> None:
     exc = BackendFailed({"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}, "out", "err")
     assert str(exc) == "packaging backend failed (code=1), with TypeError: bad\nerrout"
-    assert repr(exc) == (
-        "BackendFailed(result=dict(code=1, exc_type='TypeError',exc_msg='bad'), out='out', err='err')"
-    )
+    assert repr(exc) == ("BackendFailed(result=dict(code=1, exc_type='TypeError',exc_msg='bad'), out='out', err='err')")
 
     exc = BackendFailed({"code": None, "exc_type": "ValueError", "exc_msg": "missing"}, "", "")
     assert str(exc) == "packaging backend failed, with ValueError: missing"
