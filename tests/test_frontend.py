@@ -338,3 +338,25 @@ def test_backend_build_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monke
     assert not exc.args
     assert exc.exc_type == "TypeError"
     assert exc.exc_msg == "'build_editable' on 'build' returned 1 but expected type <class 'str'>"
+
+
+def test_backend_failed_str_repr() -> None:
+    exc = BackendFailed({"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}, "out", "err")
+    assert str(exc) == "packaging backend failed (code=1), with TypeError: bad\nerrout"
+    assert repr(exc) == ("BackendFailed(result=dict(code=1, exc_type='TypeError',exc_msg='bad'), out='out', err='err')")
+
+    exc = BackendFailed({"code": None, "exc_type": "ValueError", "exc_msg": "missing"}, "", "")
+    assert str(exc) == "packaging backend failed, with ValueError: missing"
+    assert exc.code is None
+
+    exc = BackendFailed({}, "", "")
+    assert exc.code == -2
+    assert exc.exc_type == "missing Exception type"
+    assert exc.exc_msg == "missing Exception message"
+    assert str(exc) == "packaging backend failed (code=-2), with missing Exception type: missing Exception message"
+
+    exc = BackendFailed({"code": 2, "exc_type": "RuntimeError", "exc_msg": "line1\nline2"}, "", "")
+    assert str(exc) == "packaging backend failed (code=2), with RuntimeError: line1\nline2"
+
+    exc = BackendFailed({"code": 3, "exc_type": "Error", "exc_msg": "msg"}, "out\n", "err\n")
+    assert str(exc) == "packaging backend failed (code=3), with Error: msg\nerr\nout"

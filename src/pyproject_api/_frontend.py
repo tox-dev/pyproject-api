@@ -150,7 +150,7 @@ class BackendFailed(RuntimeError):  # noqa: N818
         #: standard error collected while running the command
         self.err = err
         #: exit code of the command
-        self.code: int = result.get("code", -2)
+        self.code: int | None = result.get("code", -2)
         #: the type of exception thrown
         self.exc_type: str = result.get("exc_type", "missing Exception type")
         #: the string representation of the exception thrown
