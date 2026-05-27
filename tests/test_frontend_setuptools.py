@@ -72,8 +72,7 @@ def test_setuptools_prepare_metadata_for_build_wheel(frontend_setuptools: Subpro
     assert list(dist.entry_points) == [EntryPoint(name="demo_exe", value="demo:a", group="console_scripts")]
     assert dist.version == "1.0"
     assert dist.metadata["Name"] == "demo"
-    values = [v for k, v in dist.metadata.items() if k == "Requires-Dist"]  # type: ignore[attr-defined]
-    # ignore because "PackageMetadata" has no attribute "items"
+    values = dist.metadata.get_all("Requires-Dist") or []
     expected = ["magic>3", "requests>2"] if sys.version_info[0:2] > (3, 8) else ["magic >3", "requests >2"]
     assert sorted(values) == expected
     assert isinstance(result.out, str)

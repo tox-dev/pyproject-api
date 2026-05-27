@@ -90,8 +90,7 @@ def run(argv):  # noqa: C901, PLR0912, PLR0915
             try:
                 cmd = parsed_message["cmd"]
                 print("Backend: run command {} with args {}".format(cmd, parsed_message["kwargs"]))
-                outcome = backend_proxy(parsed_message["cmd"], **parsed_message["kwargs"])
-                result["return"] = outcome
+                result["return"] = backend_proxy(cmd, **parsed_message["kwargs"])
                 if cmd == "_exit":
                     break
             except BaseException as exception:  # noqa: BLE001

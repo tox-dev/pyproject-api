@@ -99,7 +99,7 @@ def get_requires_for_build_sdist(config_settings: dict[str, str] | None = None) 
 if "HAS_REQUIRES_EDITABLE" in os.environ:
 
     def get_requires_for_build_editable(config_settings: dict[str, str] | None = None) -> list[str]:  # noqa: ARG001
-        return [1] if "REQUIRES_EDITABLE_BAD_RETURN" in os.environ else ["editables"]  # type: ignore[list-item]
+        return [1] if "REQUIRES_EDITABLE_BAD_RETURN" in os.environ else ["editables"]  # type: ignore[invalid-return-type]
 
 
 if "HAS_PREPARE_EDITABLE" in os.environ:
@@ -114,7 +114,7 @@ if "HAS_PREPARE_EDITABLE" in os.environ:
             (dest.parent / arc_name).write_text(dedent(data).strip())
         print(f"created metadata {dest}")  # noqa: T201
         if "PREPARE_EDITABLE_BAD" in os.environ:
-            return 1  # type: ignore[return-value] # checking bad type on purpose
+            return 1  # type: ignore[invalid-return-type] # checking bad type on purpose
         return dist_info
 
 
@@ -124,5 +124,5 @@ def build_editable(
     config_settings: dict[str, str] | None = None,
 ) -> str:
     if "BUILD_EDITABLE_BAD" in os.environ:
-        return 1  # type: ignore[return-value] # checking bad type on purpose
+        return 1  # type: ignore[invalid-return-type] # checking bad type on purpose
     return build_wheel(wheel_directory, metadata_directory, config_settings)
