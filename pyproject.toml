@@ -88,8 +88,8 @@ pkg-meta = [
 ]
 
 [tool.hatch]
-build.hooks.vcs.version-file = "src/pyproject_api/_version.py"
 version.source = "vcs"
+build.hooks.vcs.version-file = "src/pyproject_api/_version.py"
 
 [tool.ruff]
 line-length = 120
