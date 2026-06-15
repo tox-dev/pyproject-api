@@ -77,7 +77,7 @@ def run(argv):  # noqa: C901, PLR0912, PLR0915
         flush()  # flush any output generated before
         try:
             # python 2 does not support loading from bytearray
-            if sys.version_info[0] == 2:  # pragma: no branch # noqa: PLR2004
+            if sys.version_info[0] == 2:  # pragma: no branch
                 content = content.decode()  # pragma: no cover
             parsed_message = json.loads(content)
             result_file = parsed_message["result"]
