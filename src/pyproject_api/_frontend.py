@@ -43,7 +43,7 @@ class CmdStatus(ABC):
     @property
     @abstractmethod
     def done(self) -> bool:
-        """:return: truthful when the command finished running"""
+        """Truthful when the command finished running."""
         raise NotImplementedError
 
     @abstractmethod
@@ -247,12 +247,12 @@ class Frontend(ABC):
 
     @property
     def backend(self) -> str:
-        """:return: backend key"""
+        """Backend key."""
         return f"{self._backend_module}{f':{self._backend_obj}' if self._backend_obj else ''}"
 
     @property
     def backend_args(self) -> list[str]:
-        """:return: startup arguments for a backend"""
+        """Startup arguments for a backend."""
         result: list[str] = [str(_HERE / "_backend.py"), str(self._reuse_backend), self._backend_module]
         if self._backend_obj:
             result.append(self._backend_obj)
@@ -260,7 +260,7 @@ class Frontend(ABC):
 
     @property
     def optional_hooks(self) -> OptionalHooks:
-        """:return: a dictionary indicating if the optional hook is supported or not"""
+        """A dictionary indicating if the optional hook is supported or not."""
         if self._optional_hooks is None:
             result, _, __ = self._send("_optional_hooks")
             self._optional_hooks = result
