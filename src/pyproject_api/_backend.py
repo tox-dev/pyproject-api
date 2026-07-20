@@ -13,7 +13,7 @@ import sys
 import traceback
 
 
-class MissingCommand(TypeError):  # noqa: N818
+class MissingCommand(TypeError):  # ruff:ignore[error-suffix-on-exception-name]
     """Missing command."""
 
 
@@ -36,7 +36,7 @@ class BackendProxy:
     def __str__(self):
         return f"{self.__class__.__name__}(backend={self.backend})"
 
-    def _exit(self):  # noqa: PLR6301
+    def _exit(self):  # ruff:ignore[no-self-use]
         return 0
 
     def _optional_hooks(self):
@@ -58,11 +58,11 @@ def flush():
     sys.stdout.flush()
 
 
-def run(argv):  # noqa: C901, PLR0912, PLR0915
+def run(argv):  # ruff:ignore[complex-structure, too-many-branches, too-many-statements]
     reuse_process = argv[0].lower() == "true"
 
     try:
-        backend_proxy = BackendProxy(argv[1], None if len(argv) == 2 else argv[2])  # noqa: PLR2004
+        backend_proxy = BackendProxy(argv[1], None if len(argv) == 2 else argv[2])  # ruff:ignore[magic-value-comparison]
     except BaseException:
         print("failed to start backend", file=sys.stderr)
         raise
@@ -81,7 +81,7 @@ def run(argv):  # noqa: C901, PLR0912, PLR0915
                 content = content.decode()  # pragma: no cover
             parsed_message = json.loads(content)
             result_file = parsed_message["result"]
-        except Exception:  # noqa: BLE001
+        except Exception:  # ruff:ignore[blind-except]
             # ignore messages that are not valid JSON and contain a valid result path
             print(f"Backend: incorrect request to backend: {content}", file=sys.stderr)
             flush()
@@ -93,7 +93,7 @@ def run(argv):  # noqa: C901, PLR0912, PLR0915
                 result["return"] = backend_proxy(cmd, **parsed_message["kwargs"])
                 if cmd == "_exit":
                     break
-            except BaseException as exception:  # noqa: BLE001
+            except BaseException as exception:  # ruff:ignore[blind-except]
                 result["code"] = exception.code if isinstance(exception, SystemExit) else 1
                 result["exc_type"] = exception.__class__.__name__
                 result["exc_msg"] = str(exception)
@@ -102,9 +102,9 @@ def run(argv):  # noqa: C901, PLR0912, PLR0915
             finally:
                 try:
                     encoding = locale.getpreferredencoding(do_setlocale=False)
-                    with open(result_file, "w", encoding=encoding) as file_handler:  # noqa: PTH123
+                    with open(result_file, "w", encoding=encoding) as file_handler:  # ruff:ignore[builtin-open]
                         json.dump(result, file_handler)
-                except Exception:  # noqa: BLE001
+                except Exception:  # ruff:ignore[blind-except]
                     traceback.print_exc()
                 finally:
                     # used as done marker by frontend

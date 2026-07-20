@@ -140,7 +140,7 @@ class EditableResult(NamedTuple):
     err: str
 
 
-class BackendFailed(RuntimeError):  # noqa: N818
+class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name]
     """An error of the build backend."""
 
     def __init__(self, result: dict[str, Any], out: str, err: str) -> None:
@@ -178,14 +178,14 @@ class Frontend(ABC):
     #: backend requirements when the ``pyproject.toml`` does not specify it
     LEGACY_REQUIRES: tuple[Requirement, ...] = (Requirement("setuptools >= 40.8.0"),)
 
-    def __init__(  # noqa: PLR0913, PLR0917
+    def __init__(  # ruff:ignore[too-many-arguments, too-many-positional-arguments]
         self,
         root: Path,
         backend_paths: tuple[Path, ...],
         backend_module: str,
         backend_obj: str | None,
         requires: tuple[Requirement, ...],
-        reuse_backend: bool = True,  # noqa: FBT001, FBT002
+        reuse_backend: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument]
     ) -> None:
         """
         Create a new frontend.
@@ -490,7 +490,7 @@ class Frontend(ABC):
         return metadata_directory / basename, out, err
 
     @contextmanager
-    def _wheel_directory(self) -> Iterator[Path]:  # noqa: PLR6301
+    def _wheel_directory(self) -> Iterator[Path]:  # ruff:ignore[no-self-use]
         with TemporaryDirectory() as wheel_directory:
             yield Path(wheel_directory)
 

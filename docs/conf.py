@@ -1,4 +1,4 @@
-# noqa: D100
+# ruff:ignore[undocumented-public-module]
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -50,14 +50,14 @@ nitpicky = True
 nitpick_ignore = []
 
 
-def setup(app: Sphinx) -> None:  # noqa: D103
+def setup(app: Sphinx) -> None:  # ruff:ignore[undocumented-public-function]
     class PatchedPythonDomain(PythonDomain):
-        def resolve_xref(  # noqa: PLR0913,PLR0917
+        def resolve_xref(  # ruff:ignore[too-many-arguments, too-many-positional-arguments]
             self,
             env: BuildEnvironment,
             fromdocname: str,
             builder: Builder,
-            type: str,  # noqa: A002
+            type: str,  # ruff:ignore[builtin-argument-shadowing]
             target: str,
             node: pending_xref,
             contnode: Element,
