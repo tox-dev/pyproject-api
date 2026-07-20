@@ -1,4 +1,4 @@
-from __future__ import annotations  # noqa: D100
+from __future__ import annotations  # ruff:ignore[undocumented-public-module]
 
 import argparse
 import os
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ._frontend import EditableResult, SdistResult, WheelResult
 
 
-def main_parser() -> argparse.ArgumentParser:  # noqa: D103
+def main_parser() -> argparse.ArgumentParser:  # ruff:ignore[undocumented-public-function]
     parser = argparse.ArgumentParser(
         description=(
             "A pyproject.toml-based build frontend. "
@@ -61,7 +61,7 @@ def main_parser() -> argparse.ArgumentParser:  # noqa: D103
     return parser
 
 
-def main(argv: list[str]) -> None:  # noqa: D103
+def main(argv: list[str]) -> None:  # ruff:ignore[undocumented-public-function]
     parser = main_parser()
     args = parser.parse_args(argv)
 
@@ -73,22 +73,22 @@ def main(argv: list[str]) -> None:  # noqa: D103
     res: SdistResult | WheelResult | EditableResult
 
     if "sdist" in distributions:
-        print("Building sdist...")  # noqa: T201
+        print("Building sdist...")  # ruff:ignore[print]
         res = frontend.build_sdist(outdir)
-        print(res.out)  # noqa: T201
-        print(res.err, file=sys.stderr)  # noqa: T201
+        print(res.out)  # ruff:ignore[print]
+        print(res.err, file=sys.stderr)  # ruff:ignore[print]
 
     if "wheel" in distributions:
-        print("Building wheel...")  # noqa: T201
+        print("Building wheel...")  # ruff:ignore[print]
         res = frontend.build_wheel(outdir)
-        print(res.out)  # noqa: T201
-        print(res.err, file=sys.stderr)  # noqa: T201
+        print(res.out)  # ruff:ignore[print]
+        print(res.err, file=sys.stderr)  # ruff:ignore[print]
 
     if "editable" in distributions:
-        print("Building editable wheel...")  # noqa: T201
+        print("Building editable wheel...")  # ruff:ignore[print]
         res = frontend.build_editable(outdir)
-        print(res.out)  # noqa: T201
-        print(res.err, file=sys.stderr)  # noqa: T201
+        print(res.out)  # ruff:ignore[print]
+        print(res.err, file=sys.stderr)  # ruff:ignore[print]
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-class MissingCommand(TypeError): ...  # noqa: N818
+class MissingCommand(TypeError): ...  # ruff:ignore[error-suffix-on-exception-name]
 
 class BackendProxy:
     backend_module: str

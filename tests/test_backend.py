@@ -105,7 +105,7 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
         json.dumps({"cmd": "_exit", "kwargs": {}, "result": results[3]}),
     ]
 
-    def fake_backend(name: str, *args: Any, **kwargs: Any) -> Any:  # noqa: ARG001
+    def fake_backend(name: str, *args: Any, **kwargs: Any) -> Any:  # ruff:ignore[unused-function-argument]
         if name == "dummy_command_b":
             raise SystemExit(2)
 
