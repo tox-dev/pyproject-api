@@ -28,7 +28,10 @@ class SubprocessCmdStatus(CmdStatus, Thread):
 
     @property
     def done(self) -> bool:
-        return self.process.returncode is not None
+        # communicate() sets returncode before run() stores what it returned, so a caller polling the process can
+        # reach out_err() while it still holds None. Free-threaded builds land in that window; report the command
+        # finished only once its output is actually there.
+        return self._out_err is not None
 
     def out_err(self) -> tuple[str, str]:
         return cast("tuple[str, str]", self._out_err)
