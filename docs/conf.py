@@ -1,6 +1,7 @@
 # ruff:ignore[undocumented-public-module]
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 from sphinx.domains.python import PythonDomain
@@ -19,6 +20,7 @@ project_copyright = f"{company}"
 version, release = __version__, __version__.split("+")[0]
 
 extensions = [
+    "sphinx_llm.txt",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.extlinks",
     "sphinx.ext.autodoc",
@@ -71,3 +73,6 @@ def setup(app: Sphinx) -> None:  # ruff:ignore[undocumented-public-function]
             return super().resolve_xref(env, fromdocname, builder, type, target, node, contnode)
 
     app.add_domain(PatchedPythonDomain, override=True)
+
+
+markdown_http_base = os.environ.get("READTHEDOCS_CANONICAL_URL", "")

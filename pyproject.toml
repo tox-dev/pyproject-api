@@ -78,6 +78,7 @@ type = [
 docs = [
   "furo>=2025.9.25",
   "sphinx-autodoc-typehints>=3.5.1",
+  "sphinx-llm>=0.4.1",
 ]
 lint = [
   "pre-commit-uv>=4.2",
