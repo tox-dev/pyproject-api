@@ -153,10 +153,10 @@ environment.python-version = "3.14"
 
 [tool.coverage]
 run.parallel = true
-run.patch = [ "subprocess" ]
 run.plugins = [
   "covdefaults",
 ]
+run.patch = [ "subprocess" ]
 paths.source = [
   "src",
   ".tox*/*/lib/python*/site-packages",

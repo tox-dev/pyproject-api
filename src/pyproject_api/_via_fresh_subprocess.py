@@ -66,7 +66,7 @@ class SubprocessFrontend(Frontend):
         backend = os.pathsep.join(str(i) for i in self._backend_paths).strip()
         if backend:
             env["PYTHONPATH"] = backend
-        process = Popen(
+        process = Popen(  # ruff:ignore[subprocess-without-shell-equals-true]  # fixed argv, no shell
             args=[self.executable, *self.backend_args],
             stdout=PIPE,
             stderr=PIPE,
