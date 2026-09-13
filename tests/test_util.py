@@ -43,3 +43,15 @@ def test_ensure_empty_dir_on_path_folder(tmp_path: Path) -> None:
     (tmp_path / "d").write_text("")
     ensure_empty_dir(tmp_path)
     assert list(tmp_path.iterdir()) == []
+
+
+def test_ensure_empty_dir_on_path_symlink_to_folder(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    (target / "c").write_text("")
+    path = tmp_path / "a"
+    path.mkdir()
+    (path / "b").symlink_to(target, target_is_directory=True)
+    ensure_empty_dir(path)
+    assert list(path.iterdir()) == []
+    assert list(target.iterdir()) == [target / "c"]
