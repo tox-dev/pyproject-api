@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess  # ruff:ignore[suspicious-subprocess-import]
+import sys
 from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING, Literal
@@ -37,6 +39,52 @@ def test_missing_backend(local_builder: Callable[[str], Path]) -> None:
     assert exc.code == 1
     assert "failed to start backend" in exc.err
     assert "ModuleNotFoundError: No module named " in exc.err
+
+
+@pytest.mark.parametrize(("stream", "output"), [("stdout", "out"), ("stderr", "err")])
+def test_large_command_with_backend_output(stream: str, output: str, local_builder: Callable[[str], Path]) -> None:
+    tmp_path = local_builder(f"""
+        import sys
+
+        sys.{stream}.write("x" * 1048576)
+        sys.{stream}.flush()
+
+        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
+            assert config_settings == {{"payload": "y" * 1048576}}
+            return "demo-1.0-py3-none-any.whl"
+        """)
+    # Isolate the frontend so a pipe deadlock fails with a timeout instead of hanging pytest.
+    script = dedent("""
+        import sys
+        from pathlib import Path
+        from pyproject_api import SubprocessFrontend
+
+        root = Path(sys.argv[1])
+        frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+        result = frontend.build_wheel(root / "dist", config_settings={"payload": "y" * 1048576})
+        print(result.wheel.name)
+        print("x" * 1048576 in getattr(result, sys.argv[2]))
+        """)
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(tmp_path), output],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    assert result.stdout.splitlines() == ["demo-1.0-py3-none-any.whl", "True"]
+    assert not result.stderr
+
+
+def test_large_command_with_failed_backend(local_builder: Callable[[str], Path]) -> None:
+    tmp_path = local_builder('raise RuntimeError("backend import failed")')
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+
+    with pytest.raises(BackendFailed) as context:
+        frontend.build_wheel(tmp_path / "dist", config_settings={"payload": "x" * 1048576})
+
+    assert "failed to start backend" in context.value.err
+    assert "RuntimeError: backend import failed" in context.value.err
 
 
 @pytest.mark.parametrize("cmd", ["build_wheel", "build_sdist"])

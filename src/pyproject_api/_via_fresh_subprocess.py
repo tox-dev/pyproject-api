@@ -5,7 +5,7 @@ import sys
 from contextlib import contextmanager
 from subprocess import PIPE, Popen  # ruff:ignore[suspicious-subprocess-import]
 from threading import Thread
-from typing import IO, TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from ._frontend import CmdStatus, Frontend
 
@@ -17,14 +17,15 @@ if TYPE_CHECKING:
 
 
 class SubprocessCmdStatus(CmdStatus, Thread):
-    def __init__(self, process: Popen[str]) -> None:
+    def __init__(self, process: Popen[str], msg: str | None = None) -> None:
         super().__init__()
         self.process = process
+        self._msg = msg
         self._out_err: tuple[str, str] | None = None
         self.start()
 
     def run(self) -> None:
-        self._out_err = self.process.communicate()
+        self._out_err = self.process.communicate(input=self._msg)
 
     @property
     def done(self) -> bool:
@@ -75,8 +76,7 @@ class SubprocessFrontend(Frontend):
             cwd=self._root,
             env=env,
         )
-        cast("IO[str]", process.stdin).write(f"{os.linesep}{msg}{os.linesep}")
-        yield SubprocessCmdStatus(process)
+        yield SubprocessCmdStatus(process, f"{os.linesep}{msg}{os.linesep}")
 
     def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
         """
