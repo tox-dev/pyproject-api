@@ -55,11 +55,11 @@ class CmdStatus(ABC):
 class RequiresBuildSdistResult(NamedTuple):
     """Information collected while acquiring the source distribution build dependencies."""
 
-    #: wheel build dependencies
+    #: source distribution build dependencies
     requires: tuple[Requirement, ...]
     #: backend standard output while acquiring the source distribution build dependencies
     out: str
-    #: backend standard output while acquiring the source distribution build dependencies
+    #: backend standard error while acquiring the source distribution build dependencies
     err: str
 
 
@@ -75,7 +75,7 @@ class RequiresBuildWheelResult(NamedTuple):
 
 
 class RequiresBuildEditableResult(NamedTuple):
-    """Information collected while acquiring the wheel build dependencies."""
+    """Information collected while acquiring the editable wheel build dependencies."""
 
     #: editable wheel build dependencies
     requires: tuple[Requirement, ...]
@@ -92,7 +92,7 @@ class MetadataForBuildWheelResult(NamedTuple):
     metadata: Path
     #: backend standard output while generating the wheel metadata
     out: str
-    #: backend standard output while generating the wheel metadata
+    #: backend standard error while generating the wheel metadata
     err: str
 
 
@@ -103,7 +103,7 @@ class MetadataForBuildEditableResult(NamedTuple):
     metadata: Path
     #: backend standard output while generating the editable wheel metadata
     out: str
-    #: backend standard output while generating the editable wheel metadata
+    #: backend standard error while generating the editable wheel metadata
     err: str
 
 
@@ -114,7 +114,7 @@ class SdistResult(NamedTuple):
     sdist: Path
     #: backend standard output while building the source distribution
     out: str
-    #: backend standard output while building the source distribution
+    #: backend standard error while building the source distribution
     err: str
 
 
