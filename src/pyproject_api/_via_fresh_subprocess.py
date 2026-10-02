@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 from ._frontend import CmdStatus, Frontend
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
     from pathlib import Path
 
     from packaging.requirements import Requirement
@@ -62,7 +62,7 @@ class SubprocessFrontend(Frontend):
         self.executable = sys.executable
 
     @contextmanager
-    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[SubprocessCmdStatus]:  # ruff:ignore[unused-method-argument]
+    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Generator[SubprocessCmdStatus, None, None]:  # ruff:ignore[unused-method-argument]
         env = os.environ.copy()
         backend = os.pathsep.join(str(i) for i in self._backend_paths).strip()
         if backend:
