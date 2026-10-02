@@ -34,7 +34,7 @@ jobs:
           - dev
           - pkg_meta
         os:
-          - ubuntu-latest
+          - ubuntu-26.04
           - windows-latest
           - macos-latest
         exclude:
