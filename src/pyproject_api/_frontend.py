@@ -28,6 +28,34 @@ _HERE = Path(__file__).parent
 ConfigSettings = dict[str, Any] | None
 
 
+def _as_str_list(key: str, value: object) -> list[str]:
+    """
+    Check that a ``build-system`` entry holds a list of strings.
+
+    :param key: the ``build-system`` key being read
+    :param value: the raw value read from the file
+    :return: the value as a list of strings
+    """
+    if not isinstance(value, list) or not all(isinstance(i, str) for i in value):
+        msg = f"build-system.{key} must be a list of strings, got {value!r}"
+        raise BackendFailed({"code": None, "exc_type": "ValueError", "exc_msg": msg}, "", "")
+    return cast("list[str]", value)
+
+
+def _as_str(key: str, value: object) -> str:
+    """
+    Check that a ``build-system`` entry holds a string.
+
+    :param key: the ``build-system`` key being read
+    :param value: the raw value read from the file
+    :return: the value as a string
+    """
+    if not isinstance(value, str):
+        msg = f"build-system.{key} must be a string, got {value!r}"
+        raise BackendFailed({"code": None, "exc_type": "ValueError", "exc_msg": msg}, "", "")
+    return value
+
+
 class OptionalHooks(TypedDict, total=True):
     """A flag indicating if the backend supports the optional hook or not."""
 
@@ -228,14 +256,16 @@ class Frontend(ABC):
                 py_project = tomllib.load(file_handler)
             build_system = py_project.get("build-system", {})
             if "backend-path" in build_system:
-                backend_paths: tuple[Path, ...] = tuple(folder / p for p in build_system["backend-path"])
+                backend_path = _as_str_list("backend-path", build_system["backend-path"])
+                backend_paths: tuple[Path, ...] = tuple(folder / p for p in backend_path)
             else:
                 backend_paths = ()
             if "requires" in build_system:
-                requires: tuple[Requirement, ...] = tuple(Requirement(r) for r in build_system.get("requires"))
+                requires_raw = _as_str_list("requires", build_system["requires"])
+                requires: tuple[Requirement, ...] = tuple(Requirement(r) for r in requires_raw)
             else:
                 requires = cls.LEGACY_REQUIRES
-            build_backend = build_system.get("build-backend", cls.LEGACY_BUILD_BACKEND)
+            build_backend = _as_str("build-backend", build_system.get("build-backend", cls.LEGACY_BUILD_BACKEND))
         else:
             backend_paths = ()
             requires = cls.LEGACY_REQUIRES

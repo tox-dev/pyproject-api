@@ -128,6 +128,27 @@ def test_backend_build_sdist_demo_pkg_inline(tmp_path: Path, demo_pkg_inline: Pa
     assert result.sdist == tmp_path / "demo_pkg_inline-1.0.0.tar.gz"
 
 
+@pytest.mark.parametrize(
+    ("key", "value", "parsed"),
+    [
+        ("requires", '"setuptools"', "setuptools"),
+        ("requires", "42", 42),
+        ("requires", '[{"name" = "setuptools"}]', [{"name": "setuptools"}]),
+        ("backend-path", '"build"', "build"),
+        ("build-backend", "42", 42),
+    ],
+)
+def test_create_args_from_folder_bad_build_system_type(tmp_path: Path, key: str, value: str, parsed: object) -> None:
+    (tmp_path / "pyproject.toml").write_text(f"[build-system]\n{key} = {value}\n")
+
+    with pytest.raises(BackendFailed) as context:
+        SubprocessFrontend.create_args_from_folder(tmp_path)
+
+    expected = "a string" if key == "build-backend" else "a list of strings"
+    assert context.value.exc_msg == f"build-system.{key} must be {expected}, got {parsed!r}"
+    assert context.value.exc_type == "ValueError"
+
+
 def test_backend_obj(tmp_path: Path) -> None:
     toml = """
         [build-system]
