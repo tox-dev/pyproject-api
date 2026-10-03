@@ -11,7 +11,7 @@ from pyproject_api._frontend import BackendFailed
 from pyproject_api._via_fresh_subprocess import SubprocessFrontend
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
     from pathlib import Path
 
     from _pytest.tmpdir import TempPathFactory
@@ -149,7 +149,7 @@ class _Result(NamedTuple):
 
 def test_result_missing(frontend_setuptools: SubprocessFrontend, tmp_path: Path, mocker: MockerFixture) -> None:
     @contextmanager
-    def named_temporary_file(prefix: str) -> Iterator[_Result]:
+    def named_temporary_file(prefix: str) -> Generator[_Result, None, None]:
         write = S_IWUSR | S_IWGRP | S_IWOTH
         base = tmp_path / prefix
         result = base.with_suffix(".json")

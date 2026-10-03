@@ -2,7 +2,7 @@
 build-backend = "hatchling.build"
 requires = [
   "hatch-vcs>=0.5",
-  "hatchling>=1.28",
+  "hatchling>=1.32.4",
 ]
 
 [project]
@@ -47,8 +47,8 @@ dynamic = [
   "version",
 ]
 dependencies = [
-  "packaging>=25",
-  "tomli>=2.3; python_version<'3.11'",
+  "packaging>=26.3",
+  "tomli>=2.4.1; python_version<'3.11'",
 ]
 urls.Changelog = "https://github.com/tox-dev/pyproject-api/releases"
 urls.Homepage = "https://pyproject-api.readthedocs.io"
@@ -65,28 +65,28 @@ dev = [
 ]
 test = [
   "covdefaults>=2.3",
-  "pytest>=8.4.2",
-  "pytest-cov>=7",
-  "pytest-mock>=3.15.1",
-  "setuptools>=80.9",
+  "pytest>=9.1.1",
+  "pytest-cov>=7.1",
+  "pytest-mock>=3.16",
+  "setuptools>=84",
 ]
 type = [
-  "ty>=0.0.19,<0.0.25",
+  "ty<0.0.25,>=0.0.24",
   { include-group = "docs" },
   { include-group = "test" },
 ]
 docs = [
-  "furo>=2025.9.25",
+  "furo>=2025.12.19",
   "sphinx-autodoc-typehints>=3.5.1",
-  "sphinx-llm>=0.4.1",
+  "sphinx-llm>=1.1",
 ]
 lint = [
-  "pre-commit-uv>=4.2",
+  "pre-commit-uv>=4.3",
 ]
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
-  "twine>=6.2",
-  "uv>=0.10.2",
+  "twine>=7",
+  "uv>=0.12.22",
 ]
 
 [tool.hatch]

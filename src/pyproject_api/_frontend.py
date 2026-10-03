@@ -17,7 +17,7 @@ from packaging.requirements import Requirement
 from pyproject_api._util import ensure_empty_dir
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator, Iterator
 
 if sys.version_info >= (3, 11):  # pragma: no cover (py311+)
     import tomllib
@@ -490,7 +490,7 @@ class Frontend(ABC):
         return metadata_directory / basename, out, err
 
     @contextmanager
-    def _wheel_directory(self) -> Iterator[Path]:  # ruff:ignore[no-self-use]
+    def _wheel_directory(self) -> Generator[Path, None, None]:  # ruff:ignore[no-self-use]
         with TemporaryDirectory() as wheel_directory:
             yield Path(wheel_directory)
 
