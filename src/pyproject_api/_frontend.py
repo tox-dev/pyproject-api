@@ -28,34 +28,6 @@ _HERE = Path(__file__).parent
 ConfigSettings = dict[str, Any] | None
 
 
-def _as_str_list(key: str, value: object) -> list[str]:
-    """
-    Check that a ``build-system`` entry holds a list of strings.
-
-    :param key: the ``build-system`` key being read
-    :param value: the raw value read from the file
-    :return: the value as a list of strings
-    """
-    if not isinstance(value, list) or not all(isinstance(i, str) for i in value):
-        msg = f"build-system.{key} must be a list of strings, got {value!r}"
-        raise BackendFailed({"code": None, "exc_type": "ValueError", "exc_msg": msg}, "", "")
-    return cast("list[str]", value)
-
-
-def _as_str(key: str, value: object) -> str:
-    """
-    Check that a ``build-system`` entry holds a string.
-
-    :param key: the ``build-system`` key being read
-    :param value: the raw value read from the file
-    :return: the value as a string
-    """
-    if not isinstance(value, str):
-        msg = f"build-system.{key} must be a string, got {value!r}"
-        raise BackendFailed({"code": None, "exc_type": "ValueError", "exc_msg": msg}, "", "")
-    return value
-
-
 class OptionalHooks(TypedDict, total=True):
     """A flag indicating if the backend supports the optional hook or not."""
 
@@ -239,10 +211,11 @@ class Frontend(ABC):
         folder: Path,
     ) -> tuple[Path, tuple[Path, ...], str, str | None, tuple[Requirement, ...], bool]:
         """
-        Frontend creation arguments from a python project folder (thould have a ``pypyproject.toml`` file per PEP-518).
+        Frontend creation arguments from a python project folder (should have a ``pyproject.toml`` file per PEP-518).
 
         :param folder: the python project folder
         :return: the frontend creation args
+        :raises ValueError: if ``build-system`` is not a table, or one of its keys has a type PEP-518 rules out
 
         E.g., to create a frontend from a python project folder:
 
@@ -254,18 +227,20 @@ class Frontend(ABC):
         if py_project_toml.exists():
             with py_project_toml.open("rb") as file_handler:
                 py_project = tomllib.load(file_handler)
-            build_system = py_project.get("build-system", {})
+            if not isinstance(build_system := py_project.get("build-system", {}), dict):
+                msg = f"build-system must be a table, got {build_system!r}"
+                raise ValueError(msg)
             if "backend-path" in build_system:
-                backend_path = _as_str_list("backend-path", build_system["backend-path"])
-                backend_paths: tuple[Path, ...] = tuple(folder / p for p in backend_path)
+                backend_paths: tuple[Path, ...] = tuple(folder / p for p in _str_list(build_system, "backend-path"))
             else:
                 backend_paths = ()
             if "requires" in build_system:
-                requires_raw = _as_str_list("requires", build_system["requires"])
-                requires: tuple[Requirement, ...] = tuple(Requirement(r) for r in requires_raw)
+                requires: tuple[Requirement, ...] = tuple(Requirement(r) for r in _str_list(build_system, "requires"))
             else:
                 requires = cls.LEGACY_REQUIRES
-            build_backend = _as_str("build-backend", build_system.get("build-backend", cls.LEGACY_BUILD_BACKEND))
+            if not isinstance(build_backend := build_system.get("build-backend", cls.LEGACY_BUILD_BACKEND), str):
+                msg = f"build-system.build-backend must be a string, got {build_backend!r}"
+                raise ValueError(msg)
         else:
             backend_paths = ()
             requires = cls.LEGACY_REQUIRES
@@ -558,3 +533,10 @@ class Frontend(ABC):
     @contextmanager
     def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[CmdStatus]:
         raise NotImplementedError
+
+
+def _str_list(build_system: dict[str, Any], key: str) -> list[str]:
+    if not isinstance(value := build_system[key], list) or not all(isinstance(entry, str) for entry in value):
+        msg = f"build-system.{key} must be a list of strings, got {value!r}"
+        raise ValueError(msg)
+    return value

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import subprocess  # ruff:ignore[suspicious-subprocess-import]
 import sys
 from pathlib import Path
@@ -129,24 +130,35 @@ def test_backend_build_sdist_demo_pkg_inline(tmp_path: Path, demo_pkg_inline: Pa
 
 
 @pytest.mark.parametrize(
-    ("key", "value", "parsed"),
+    ("toml", "message"),
     [
-        ("requires", '"setuptools"', "setuptools"),
-        ("requires", "42", 42),
-        ("requires", '[{"name" = "setuptools"}]', [{"name": "setuptools"}]),
-        ("backend-path", '"build"', "build"),
-        ("build-backend", "42", 42),
+        pytest.param(
+            '[build-system]\nrequires = "setuptools"',
+            "build-system.requires must be a list of strings, got 'setuptools'",
+            id="requires-string",
+        ),
+        pytest.param(
+            '[build-system]\nrequires = [{name = "setuptools"}]',
+            "build-system.requires must be a list of strings, got [{'name': 'setuptools'}]",
+            id="requires-table-entry",
+        ),
+        pytest.param(
+            '[build-system]\nbackend-path = "build"',
+            "build-system.backend-path must be a list of strings, got 'build'",
+            id="backend-path-string",
+        ),
+        pytest.param(
+            "[build-system]\nbuild-backend = 42",
+            "build-system.build-backend must be a string, got 42",
+            id="build-backend-int",
+        ),
+        pytest.param('build-system = "setuptools"', "build-system must be a table, got 'setuptools'", id="not-a-table"),
     ],
 )
-def test_create_args_from_folder_bad_build_system_type(tmp_path: Path, key: str, value: str, parsed: object) -> None:
-    (tmp_path / "pyproject.toml").write_text(f"[build-system]\n{key} = {value}\n")
-
-    with pytest.raises(BackendFailed) as context:
+def test_create_args_from_folder_rejects_bad_build_system_type(tmp_path: Path, toml: str, message: str) -> None:
+    (tmp_path / "pyproject.toml").write_text(toml)
+    with pytest.raises(ValueError, match=rf"^{re.escape(message)}$"):
         SubprocessFrontend.create_args_from_folder(tmp_path)
-
-    expected = "a string" if key == "build-backend" else "a list of strings"
-    assert context.value.exc_msg == f"build-system.{key} must be {expected}, got {parsed!r}"
-    assert context.value.exc_type == "ValueError"
 
 
 def test_backend_obj(tmp_path: Path) -> None:
