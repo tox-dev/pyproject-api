@@ -77,6 +77,40 @@ def test_large_command_with_backend_output(stream: str, output: str, local_build
     assert not result.stderr
 
 
+@pytest.mark.parametrize(("stream", "output"), [("stdout", "out"), ("stderr", "err")])
+def test_backend_output_with_invalid_bytes(stream: str, output: str, local_builder: Callable[[str], Path]) -> None:
+    tmp_path = local_builder(f"""
+        import sys
+
+        sys.{stream}.buffer.write(b"before\\xffafter")
+        sys.{stream}.flush()
+
+        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
+            return "demo-1.0-py3-none-any.whl"
+        """)
+    # Isolate the frontend so a decoding failure cannot leave pytest polling forever.
+    script = dedent("""
+        import sys
+        from pathlib import Path
+        from pyproject_api import SubprocessFrontend
+
+        root = Path(sys.argv[1])
+        frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+        result = frontend.build_wheel(root / "dist")
+        print(result.wheel.name)
+        print("before" + chr(0xFFFD) + "after" in getattr(result, sys.argv[2]))
+        """)
+    result = subprocess.run(
+        [sys.executable, "-X", "utf8", "-c", script, str(tmp_path), output],
+        capture_output=True,
+        encoding="utf-8",
+        timeout=10,
+        check=True,
+    )
+    assert result.stdout.splitlines() == ["demo-1.0-py3-none-any.whl", "True"]
+    assert not result.stderr
+
+
 def test_large_command_with_failed_backend(local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder('raise RuntimeError("backend import failed")')
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
