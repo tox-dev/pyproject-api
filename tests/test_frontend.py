@@ -42,8 +42,45 @@ def test_missing_backend(local_builder: Callable[[str], Path]) -> None:
     assert "ModuleNotFoundError: No module named " in exc.err
 
 
-@pytest.mark.parametrize(("stream", "output"), [("stdout", "out"), ("stderr", "err")])
-def test_large_command_with_backend_output(stream: str, output: str, local_builder: Callable[[str], Path]) -> None:
+@pytest.fixture
+def isolated_build_wheel() -> Callable[[Path, str, int], tuple[str, str]]:
+    script = dedent("""
+        import sys
+        from pathlib import Path
+        from pyproject_api import SubprocessFrontend
+
+        root = Path(sys.argv[1])
+        frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+        result = frontend.build_wheel(root / "dist", config_settings={"payload": "y" * int(sys.argv[3])})
+        print(result.wheel.name)
+        print(getattr(result, sys.argv[2]), end="")
+        """)
+
+    def _f(root: Path, output: str, payload_size: int) -> tuple[str, str]:
+        # Run the frontend in a child process so a hang fails on the timeout instead of stalling pytest.
+        result = subprocess.run(
+            [sys.executable, "-X", "utf8", "-c", script, str(root), output, str(payload_size)],
+            capture_output=True,
+            encoding="utf-8",
+            timeout=30,
+            check=True,
+        )
+        assert not result.stderr
+        wheel, captured = result.stdout.split("\n", 1)
+        return wheel, captured
+
+    return _f
+
+
+@pytest.mark.parametrize(
+    ("stream", "output"), [pytest.param("stdout", "out", id="stdout"), pytest.param("stderr", "err", id="stderr")]
+)
+def test_large_command_with_backend_output(
+    stream: str,
+    output: str,
+    local_builder: Callable[[str], Path],
+    isolated_build_wheel: Callable[[Path, str, int], tuple[str, str]],
+) -> None:
     tmp_path = local_builder(f"""
         import sys
 
@@ -54,31 +91,19 @@ def test_large_command_with_backend_output(stream: str, output: str, local_build
             assert config_settings == {{"payload": "y" * 1048576}}
             return "demo-1.0-py3-none-any.whl"
         """)
-    # Isolate the frontend so a pipe deadlock fails with a timeout instead of hanging pytest.
-    script = dedent("""
-        import sys
-        from pathlib import Path
-        from pyproject_api import SubprocessFrontend
-
-        root = Path(sys.argv[1])
-        frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
-        result = frontend.build_wheel(root / "dist", config_settings={"payload": "y" * 1048576})
-        print(result.wheel.name)
-        print("x" * 1048576 in getattr(result, sys.argv[2]))
-        """)
-    result = subprocess.run(
-        [sys.executable, "-c", script, str(tmp_path), output],
-        capture_output=True,
-        text=True,
-        timeout=30,
-        check=True,
-    )
-    assert result.stdout.splitlines() == ["demo-1.0-py3-none-any.whl", "True"]
-    assert not result.stderr
+    wheel, captured = isolated_build_wheel(tmp_path, output, 1048576)
+    assert (wheel, "x" * 1048576 in captured) == ("demo-1.0-py3-none-any.whl", True)
 
 
-@pytest.mark.parametrize(("stream", "output"), [("stdout", "out"), ("stderr", "err")])
-def test_backend_output_with_invalid_bytes(stream: str, output: str, local_builder: Callable[[str], Path]) -> None:
+@pytest.mark.parametrize(
+    ("stream", "output"), [pytest.param("stdout", "out", id="stdout"), pytest.param("stderr", "err", id="stderr")]
+)
+def test_backend_output_with_invalid_bytes(
+    stream: str,
+    output: str,
+    local_builder: Callable[[str], Path],
+    isolated_build_wheel: Callable[[Path, str, int], tuple[str, str]],
+) -> None:
     tmp_path = local_builder(f"""
         import sys
 
@@ -88,27 +113,8 @@ def test_backend_output_with_invalid_bytes(stream: str, output: str, local_build
         def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
             return "demo-1.0-py3-none-any.whl"
         """)
-    # Isolate the frontend so a decoding failure cannot leave pytest polling forever.
-    script = dedent("""
-        import sys
-        from pathlib import Path
-        from pyproject_api import SubprocessFrontend
-
-        root = Path(sys.argv[1])
-        frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
-        result = frontend.build_wheel(root / "dist")
-        print(result.wheel.name)
-        print("before" + chr(0xFFFD) + "after" in getattr(result, sys.argv[2]))
-        """)
-    result = subprocess.run(
-        [sys.executable, "-X", "utf8", "-c", script, str(tmp_path), output],
-        capture_output=True,
-        encoding="utf-8",
-        timeout=10,
-        check=True,
-    )
-    assert result.stdout.splitlines() == ["demo-1.0-py3-none-any.whl", "True"]
-    assert not result.stderr
+    wheel, captured = isolated_build_wheel(tmp_path, output, 0)
+    assert (wheel, "before\ufffdafter" in captured) == ("demo-1.0-py3-none-any.whl", True)
 
 
 def test_large_command_with_failed_backend(local_builder: Callable[[str], Path]) -> None:
