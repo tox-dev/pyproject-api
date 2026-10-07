@@ -114,7 +114,7 @@ def test_backend_output_with_invalid_bytes(
             return "demo-1.0-py3-none-any.whl"
         """)
     wheel, captured = isolated_build_wheel(tmp_path, output, 0)
-    assert (wheel, "before\ufffdafter" in captured) == ("demo-1.0-py3-none-any.whl", True)
+    assert (wheel, "before\\xffafter" in captured) == ("demo-1.0-py3-none-any.whl", True)
 
 
 def test_large_command_with_failed_backend(local_builder: Callable[[str], Path]) -> None:

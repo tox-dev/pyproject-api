@@ -73,7 +73,7 @@ class SubprocessFrontend(Frontend):
             stderr=PIPE,
             stdin=PIPE,
             universal_newlines=True,
-            errors="replace",
+            errors="backslashreplace",
             cwd=self._root,
             env=env,
         )
