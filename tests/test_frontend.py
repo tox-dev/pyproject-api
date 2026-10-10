@@ -42,6 +42,17 @@ def test_missing_backend(local_builder: Callable[[str], Path]) -> None:
     assert "ModuleNotFoundError: No module named " in exc.err
 
 
+def test_relative_project_folder(local_builder: Callable[[str], Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    root = local_builder("""
+        def get_requires_for_build_wheel(config_settings=None):
+            return ["wheel"]
+        """)
+    monkeypatch.chdir(root.parent)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(Path(root.name))[:-1])
+
+    assert frontend.get_requires_for_build_wheel().requires == (Requirement("wheel"),)
+
+
 @pytest.fixture
 def isolated_build_wheel() -> Callable[[Path, str, int], tuple[str, str]]:
     script = dedent("""

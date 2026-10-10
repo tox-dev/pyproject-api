@@ -219,6 +219,7 @@ class Frontend(ABC):
 
             frontend = Frontend(*Frontend.create_args_from_folder(project_folder))
         """
+        folder = folder.absolute()
         py_project_toml = folder / "pyproject.toml"
         if py_project_toml.exists():
             with py_project_toml.open("rb") as file_handler:
