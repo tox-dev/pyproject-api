@@ -53,6 +53,26 @@ def test_relative_project_folder(local_builder: Callable[[str], Path], monkeypat
     assert frontend.get_requires_for_build_wheel().requires == (Requirement("wheel"),)
 
 
+@pytest.mark.parametrize(
+    "hook",
+    [
+        pytest.param("prepare_metadata_for_build_wheel", id="wheel"),
+        pytest.param("prepare_metadata_for_build_editable", id="editable"),
+    ],
+)
+def test_relative_project_folder_rejects_root_as_metadata_directory(
+    hook: str, local_builder: Callable[[str], Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = local_builder("")
+    monkeypatch.chdir(root.parent)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(Path(root.name))[:-1])
+
+    with pytest.raises(RuntimeError, match="the project root and the metadata directory can't be the same"):
+        getattr(frontend, hook)(Path(root.name))
+
+    assert {path.name for path in root.iterdir()} == {"pyproject.toml", "build_tester.py"}
+
+
 @pytest.fixture
 def isolated_build_wheel() -> Callable[[Path, str, int], tuple[str, str]]:
     script = dedent("""
