@@ -23,7 +23,7 @@ maintainers = [
 authors = [
   { name = "Bernát Gábor", email = "gaborjbernat@gmail.com" },
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Framework :: tox",
@@ -33,7 +33,6 @@ classifiers = [
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -48,7 +47,6 @@ dynamic = [
 ]
 dependencies = [
   "packaging>=26.3",
-  "tomli>=2.4.1; python_version<'3.11'",
 ]
 urls.Changelog = "https://github.com/tox-dev/pyproject-api/releases"
 urls.Homepage = "https://pyproject-api.readthedocs.io"
@@ -102,36 +100,36 @@ lint.select = [
   "ALL",
 ]
 lint.ignore = [
-  "ANN401", # Dynamically typed expressions
-  "COM812", # Conflict with formatter
-  "CPY",    # No copyright statements
-  "D203",   # `one-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible
-  "D212",   # `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible
-  "DOC",    # no restructuredtext support
-  "INP001", # no implicit namespaces here
-  "ISC001", # Conflict with formatter
-  "S104",   # Possible binding to all interface
+  "any-type",                                  # Dynamically typed expressions
+  "CPY",                                       # No copyright statements
+  "DOC",                                       # no restructuredtext support
+  "hardcoded-bind-all-interfaces",             # Possible binding to all interface
+  "implicit-namespace-package",                # no implicit namespaces here
+  "incorrect-blank-line-before-class",         # `one-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible
+  "missing-trailing-comma",                    # Conflict with formatter
+  "multi-line-summary-first-line",             # `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible
+  "single-line-implicit-string-concatenation", # Conflict with formatter
 ]
 lint.per-file-ignores."src/pyproject_api/_backend.py" = [
   "ANN",
-  "I002",
-  "T201",
+  "missing-required-import",
+  "print",
   "UP",
 ]
 lint.per-file-ignores."src/pyproject_api/_backend.pyi" = [
-  "E301",
-  "E302",
+  "blank-line-between-methods",
+  "blank-lines-top-level",
 ]
 lint.per-file-ignores."tests/**/*.py" = [
-  "D",       # don't care about documentation in tests
-  "FBT",     # don't care about booleans as positional arguments in tests
-  "INP001",  # no implicit namespace
-  "PLC2701", # private imports
-  "PLR0913", # too many positional arguments
-  "PLR0917", # too many positional arguments
-  "PLR2004", # Magic value used in comparison, consider replacing with a constant variable
-  "S101",    # asserts allowed in tests
-  "S603",    # `subprocess` call: check for execution of untrusted input
+  "assert",                               # asserts allowed in tests
+  "D",                                    # don't care about documentation in tests
+  "FBT",                                  # don't care about booleans as positional arguments in tests
+  "implicit-namespace-package",           # no implicit namespace
+  "import-private-name",                  # private imports
+  "magic-value-comparison",               # Magic value used in comparison, consider replacing with a constant variable
+  "subprocess-without-shell-equals-true", # `subprocess` call: check for execution of untrusted input
+  "too-many-arguments",                   # too many positional arguments
+  "too-many-positional-arguments",        # too many positional arguments
 ]
 lint.isort = { known-first-party = [
   "pyproject_api",
@@ -149,7 +147,7 @@ count = true
 max_supported_python = "3.15"
 
 [tool.ty]
-environment.python-version = "3.14"
+environment.python-version = "3.15"
 
 [tool.coverage]
 run.parallel = true

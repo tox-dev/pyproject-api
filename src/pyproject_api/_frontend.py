@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-import sys
+import tomllib
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
@@ -19,10 +19,6 @@ from pyproject_api._util import ensure_empty_dir
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
 
-if sys.version_info >= (3, 11):  # pragma: no cover (py311+)
-    import tomllib
-else:  # pragma: no cover (py311+)
-    import tomli as tomllib
 
 _HERE = Path(__file__).parent
 ConfigSettings = dict[str, Any] | None
