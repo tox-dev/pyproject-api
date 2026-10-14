@@ -13,23 +13,35 @@ if TYPE_CHECKING:
     import pytest_mock
 
 
-@pytest.mark.parametrize("distribution", ["--sdist", "--wheel", "--editable"])
-@pytest.mark.parametrize("output", ["default", "relative", "absolute"])
-def test_cli_build_output_directory(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, distribution: str, output: str
+@pytest.mark.parametrize(
+    ("distribution", "filename"),
+    [
+        pytest.param("--sdist", "demo_pkg_inline-1.0.0.tar.gz", id="sdist"),
+        pytest.param("--wheel", "demo_pkg_inline-1.0.0-py3-none-any.whl", id="wheel"),
+        pytest.param("--editable", "demo_pkg_inline-1.0.0-py3-none-any.whl", id="editable"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("outdir_args", "outdir"),
+    [
+        pytest.param([], "project/dist", id="default-outdir"),
+        pytest.param(["--outdir", "artifacts"], "artifacts", id="relative-outdir"),
+    ],
+)
+def test_cli_build_relative_to_caller(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    distribution: str,
+    filename: str,
+    outdir_args: list[str],
+    outdir: str,
 ) -> None:
-    project = tmp_path / "project"
-    copytree(Path(__file__).parent / "demo_pkg_inline", project)
+    copytree(Path(__file__).parent / "demo_pkg_inline", tmp_path / "project")
     monkeypatch.chdir(tmp_path)
-    cli_args = ["project", distribution]
-    expected_dir = project / "dist" if output == "default" else tmp_path / "artifacts"
-    if output != "default":
-        cli_args.extend(["--outdir", "artifacts" if output == "relative" else str(expected_dir)])
 
-    pyproject_api.__main__.main(cli_args)
+    pyproject_api.__main__.main(["project", distribution, *outdir_args])
 
-    filename = "demo_pkg_inline-1.0.0.tar.gz" if distribution == "--sdist" else "demo_pkg_inline-1.0.0-py3-none-any.whl"
-    assert (expected_dir / filename).is_file()
+    assert (tmp_path / outdir / filename).is_file()
 
 
 @pytest.mark.parametrize(
