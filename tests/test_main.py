@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from shutil import copytree
 from typing import TYPE_CHECKING
 
 import pytest
@@ -10,6 +11,25 @@ from pyproject_api._frontend import EditableResult, SdistResult, WheelResult
 
 if TYPE_CHECKING:
     import pytest_mock
+
+
+@pytest.mark.parametrize("distribution", ["--sdist", "--wheel", "--editable"])
+@pytest.mark.parametrize("output", ["default", "relative", "absolute"])
+def test_cli_build_output_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, distribution: str, output: str
+) -> None:
+    project = tmp_path / "project"
+    copytree(Path(__file__).parent / "demo_pkg_inline", project)
+    monkeypatch.chdir(tmp_path)
+    cli_args = ["project", distribution]
+    expected_dir = project / "dist" if output == "default" else tmp_path / "artifacts"
+    if output != "default":
+        cli_args.extend(["--outdir", "artifacts" if output == "relative" else str(expected_dir)])
+
+    pyproject_api.__main__.main(cli_args)
+
+    filename = "demo_pkg_inline-1.0.0.tar.gz" if distribution == "--sdist" else "demo_pkg_inline-1.0.0-py3-none-any.whl"
+    assert (expected_dir / filename).is_file()
 
 
 @pytest.mark.parametrize(
@@ -24,13 +44,13 @@ if TYPE_CHECKING:
         (
             ["src"],
             Path("src"),
-            Path("src") / "dist",
+            Path("src").absolute() / "dist",
             ["build_sdist", "build_wheel"],
         ),
         (
             ["-o", "out"],
             Path.cwd(),
-            Path("out"),
+            Path("out").absolute(),
             ["build_sdist", "build_wheel"],
         ),
         (

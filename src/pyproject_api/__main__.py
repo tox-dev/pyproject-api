@@ -65,7 +65,7 @@ def main(argv: list[str]) -> None:  # ruff:ignore[undocumented-public-function]
     parser = main_parser()
     args = parser.parse_args(argv)
 
-    outdir = args.outdir or args.srcdir / "dist"
+    outdir = (args.outdir or args.srcdir / "dist").absolute()
     # we intentionally do not build editable distributions by default
     distributions = args.distributions or ["sdist", "wheel"]
 
