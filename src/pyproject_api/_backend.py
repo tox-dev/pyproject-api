@@ -23,7 +23,8 @@ class BackendProxy:
         self.backend_object = backend_obj
         backend = importlib.import_module(self.backend_module)
         if self.backend_object:
-            backend = getattr(backend, self.backend_object)
+            for name in self.backend_object.split("."):
+                backend = getattr(backend, name)
         self.backend = backend
 
     def __call__(self, name, *args, **kwargs):
