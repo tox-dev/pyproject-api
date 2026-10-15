@@ -232,7 +232,15 @@ def test_create_args_from_folder_rejects_bad_build_system_type(tmp_path: Path, t
         SubprocessFrontend.create_args_from_folder(tmp_path)
 
 
-@pytest.mark.parametrize("backend_obj", ["backend", "backend:", "holder.backend", "holder.nested.backend"])
+@pytest.mark.parametrize(
+    "backend_obj",
+    [
+        pytest.param("backend", id="attribute"),
+        pytest.param("backend:", id="trailing-colon"),
+        pytest.param("holder.backend", id="nested"),
+        pytest.param("holder.nested.backend", id="deeply-nested"),
+    ],
+)
 def test_backend_obj(tmp_path: Path, backend_obj: str) -> None:
     toml = f"""
         [build-system]
