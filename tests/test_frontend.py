@@ -232,19 +232,23 @@ def test_create_args_from_folder_rejects_bad_build_system_type(tmp_path: Path, t
         SubprocessFrontend.create_args_from_folder(tmp_path)
 
 
-def test_backend_obj(tmp_path: Path) -> None:
-    toml = """
+@pytest.mark.parametrize("backend_obj", ["backend", "backend:", "holder.backend", "holder.nested.backend"])
+def test_backend_obj(tmp_path: Path, backend_obj: str) -> None:
+    toml = f"""
         [build-system]
         requires=[]
-        build-backend = "build.api:backend:"
+        build-backend = "build.api:{backend_obj}"
         backend-path=["."]
         """
     api = """
+        from types import SimpleNamespace
+
         class A:
             def get_requires_for_build_sdist(self, config_settings=None):
                 return ["a"]
 
         backend = A()
+        holder = SimpleNamespace(backend=backend, nested=SimpleNamespace(backend=backend))
         """
     (tmp_path / "pyproject.toml").write_text(dedent(toml))
     build = tmp_path / "build"
@@ -253,9 +257,7 @@ def test_backend_obj(tmp_path: Path) -> None:
     (build / "api.py").write_text(dedent(api))
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
     result = frontend.get_requires_for_build_sdist()
-    for left, right in zip(result.requires, (Requirement("a"),), strict=False):
-        assert isinstance(left, Requirement)
-        assert str(left) == str(right)
+    assert result.requires == (Requirement("a"),)
 
 
 @pytest.mark.parametrize("of_type", ["wheel", "sdist"])
