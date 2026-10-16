@@ -16,6 +16,8 @@ from pyproject_api._via_fresh_subprocess import SubprocessFrontend
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    import pytest_mock
+
 
 @pytest.fixture
 def local_builder(tmp_path: Path) -> Callable[[str], Path]:
@@ -183,49 +185,35 @@ def test_empty_pyproject(tmp_path: Path) -> None:
         assert str(left) == str(right)
 
 
-@pytest.mark.parametrize("path_kind", ["parent", "absolute-outside", "absolute-inside", "embedded-nul"])
-def test_create_args_from_folder_rejects_invalid_backend_path(tmp_path: Path, path_kind: str) -> None:
+@pytest.mark.parametrize(
+    "backend_path",
+    [
+        pytest.param("../outside", id="parent"),
+        pytest.param("{tmp}/outside", id="absolute-outside"),
+        pytest.param("{tmp}/project", id="absolute-inside"),
+        pytest.param("link", id="symlink-outside"),
+        pytest.param("\\u0000", id="nul"),
+    ],
+)
+def test_create_args_from_folder_rejects_out_of_tree_backend_path(tmp_path: Path, backend_path: str) -> None:
     project = tmp_path / "project"
-    outside = tmp_path / "outside"
     project.mkdir()
-    outside.mkdir()
-    inside = project / "backend"
-    inside.mkdir()
-    backend_path = {
-        "parent": "../outside",
-        "absolute-outside": outside.as_posix(),
-        "absolute-inside": inside.as_posix(),
-        "embedded-nul": "\\u0000",
-    }[path_kind]
+    (project / "link").symlink_to(tmp_path, target_is_directory=True)
     (project / "pyproject.toml").write_text(
-        f'[build-system]\nbackend-path = ["{backend_path}"]\nbuild-backend = "outside_backend"\n',
+        f'[build-system]\nbackend-path = ["{backend_path.format(tmp=tmp_path.as_posix())}"]\nbuild-backend = "b"\n'
     )
 
-    with pytest.raises(
-        ValueError, match=r"build-system\.backend-path.*must be a relative path without NUL.*project root"
-    ):
+    with pytest.raises(ValueError, match=r"backend-path entry .* must be a relative path inside the project"):
         SubprocessFrontend.create_args_from_folder(project)
 
 
-def test_create_args_from_folder_wraps_backend_path_resolution_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_create_args_from_folder_rejects_unresolvable_backend_path(
+    tmp_path: Path, mocker: pytest_mock.MockerFixture
 ) -> None:
-    (tmp_path / "pyproject.toml").write_text(
-        '[build-system]\nbackend-path = ["backend"]\nbuild-backend = "outside_backend"\n',
-    )
-    backend_path = tmp_path / "backend"
-    original_resolve = Path.resolve
+    (tmp_path / "pyproject.toml").write_text('[build-system]\nbackend-path = ["."]\nbuild-backend = "b"\n')
+    mocker.patch.object(Path, "resolve", autospec=True, side_effect=RuntimeError("Symlink loop"))
 
-    def fail_backend_path_resolution(path: Path, strict: bool = False) -> Path:
-        if path == backend_path:
-            msg = "synthetic path resolution failure"
-            raise OSError(msg)
-        return original_resolve(path, strict=strict)
-
-    monkeypatch.setattr(Path, "resolve", fail_backend_path_resolution)
-    with pytest.raises(
-        ValueError, match=r"build-system\.backend-path.*must be a relative path without NUL.*project root"
-    ):
+    with pytest.raises(ValueError, match=r"backend-path entry '\.' must be a relative path inside the project"):
         SubprocessFrontend.create_args_from_folder(tmp_path)
 
 
