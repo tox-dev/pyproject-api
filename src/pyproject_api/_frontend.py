@@ -211,7 +211,8 @@ class Frontend(ABC):
 
         :param folder: the python project folder
         :return: the frontend creation args
-        :raises ValueError: if ``build-system`` is not a table, or one of its keys has a type PEP-518 rules out
+        :raises ValueError: if ``build-system`` is not a table, one of its keys has a type PEP-518 rules out, or a
+            ``backend-path`` entry does not resolve inside the project (PEP-517 in-tree backends)
 
         E.g., to create a frontend from a python project folder:
 
@@ -228,7 +229,9 @@ class Frontend(ABC):
                 msg = f"build-system must be a table, got {build_system!r}"
                 raise ValueError(msg)
             if "backend-path" in build_system:
-                backend_paths: tuple[Path, ...] = tuple(folder / p for p in _str_list(build_system, "backend-path"))
+                backend_paths: tuple[Path, ...] = tuple(
+                    _in_tree_path(folder, entry) for entry in _str_list(build_system, "backend-path")
+                )
             else:
                 backend_paths = ()
             if "requires" in build_system:
@@ -537,6 +540,19 @@ def _str_list(build_system: dict[str, Any], key: str) -> list[str]:
         msg = f"build-system.{key} must be a list of strings, got {value!r}"
         raise ValueError(msg)
     return value
+
+
+def _in_tree_path(folder: Path, entry: str) -> Path:
+    path = folder / entry
+    # Python 3.15 on Windows resolves a path containing NUL instead of raising
+    try:
+        inside = "\0" not in entry and not Path(entry).is_absolute() and path.resolve().is_relative_to(folder.resolve())
+    except (OSError, RuntimeError):  # RuntimeError: symlink loop before Python 3.13
+        inside = False
+    if not inside:
+        msg = f"build-system.backend-path entry {entry!r} must be a relative path inside the project {folder}"
+        raise ValueError(msg)
+    return path
 
 
 __all__ = [
