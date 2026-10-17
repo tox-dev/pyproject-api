@@ -88,23 +88,39 @@ def run(argv):  # ruff:ignore[complex-structure, too-many-branches, too-many-sta
             flush()
         else:
             result = {}
+            response = None
             try:
                 cmd = parsed_message["cmd"]
                 print("Backend: run command {} with args {}".format(cmd, parsed_message["kwargs"]))
                 result["return"] = backend_proxy(cmd, **parsed_message["kwargs"])
-                if cmd == "_exit":
-                    break
+                response = json.dumps(result)
             except BaseException as exception:  # ruff:ignore[blind-except]
-                result["code"] = exception.code if isinstance(exception, SystemExit) else 1
-                result["exc_type"] = exception.__class__.__name__
-                result["exc_msg"] = str(exception)
+                try:
+                    result = {
+                        "code": exception.code if isinstance(exception, SystemExit) else 1,
+                        "exc_type": exception.__class__.__name__,
+                        "exc_msg": str(exception),
+                    }
+                    response = json.dumps(result)
+                except BaseException:  # ruff:ignore[blind-except]
+                    result = {
+                        "code": 1,
+                        "exc_type": "RuntimeError",
+                        "exc_msg": "Failed to serialize backend exception",
+                    }
+                    response = json.dumps(result)
                 if not isinstance(exception, MissingCommand):  # for missing command do not print stack
                     traceback.print_exc()
+            else:
+                if cmd == "_exit":
+                    break
             finally:
                 try:
                     encoding = locale.getpreferredencoding(do_setlocale=False)
-                    with open(result_file, "w", encoding=encoding) as file_handler:  # ruff:ignore[builtin-open]
-                        json.dump(result, file_handler)
+                    with open(  # ruff:ignore[builtin-open, write-whole-file]  # Python 2.7 compatible
+                        result_file, "w", encoding=encoding
+                    ) as file_handler:
+                        file_handler.write(response)
                 except Exception:  # ruff:ignore[blind-except]
                     traceback.print_exc()
                 finally:

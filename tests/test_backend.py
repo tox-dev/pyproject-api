@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess  # ruff:ignore[suspicious-subprocess-import]
+import sys
+from textwrap import dedent
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from pyproject_api import _backend
 from pyproject_api._backend import BackendProxy, read_line, run
 
 if TYPE_CHECKING:
@@ -128,6 +132,62 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
     assert "Backend: run command dummy_command_b with args {'baz': 'qux'}" in captured.out
     assert "Backend: run command dummy_command_c with args {'win': 'wow'}" in captured.out
     assert "SystemExit: 2" in captured.err
+
+
+@pytest.mark.parametrize("code", ["Path('failure.txt')", "b'failure'"])
+@pytest.mark.parametrize("previous_success", [False, True])
+def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previous_success: bool) -> None:
+    (tmp_path / "exit_backend.py").write_text(
+        dedent(f"""
+        import os
+        from pathlib import Path
+
+        calls = 0
+
+        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
+            global calls
+            calls += 1
+            print("hook pid={{}} calls={{}}".format(os.getpid(), calls))
+            if config_settings["fail"]:
+                raise SystemExit({code})
+            return "demo-{{}}.whl".format(calls)
+        """)
+    )
+    failures = [False, True, False] if previous_success else [True, False]
+    requests = [
+        {"cmd": "build_wheel", "kwargs": {"wheel_directory": str(tmp_path), "config_settings": {"fail": fail}}}
+        for fail in failures
+    ]
+    requests.append({"cmd": "_exit", "kwargs": {}})
+    result_files = [tmp_path / f"response-{index}.json" for index in range(len(requests))]
+    messages = [
+        json.dumps({**request, "result": str(path)}) for request, path in zip(requests, result_files, strict=True)
+    ]
+    completed = subprocess.run(
+        [sys.executable, _backend.__file__, "True", "exit_backend"],
+        input="\n".join(messages) + "\n",
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(tmp_path)},
+        timeout=30,
+        check=False,
+    )
+
+    # Inspect the failed request first: the previous candidate returns the earlier wheel here.
+    failed = json.loads(result_files[failures.index(True)].read_text())
+    assert "return" not in failed
+    assert failed == {"code": 1, "exc_type": "RuntimeError", "exc_msg": "Failed to serialize backend exception"}
+    assert completed.returncode == 0, completed.stderr
+    for index, fail in enumerate(failures):
+        if not fail:
+            assert json.loads(result_files[index].read_text()) == {"return": f"demo-{index + 1}.whl"}
+    assert json.loads(result_files[-1].read_text()) == {"return": 0}
+    hook_lines = [line for line in completed.stdout.splitlines() if line.startswith("hook pid=")]
+    assert len(hook_lines) == len(failures)
+    assert len({line.split()[1] for line in hook_lines}) == 1
+    assert [line.split()[2] for line in hook_lines] == [f"calls={index + 1}" for index in range(len(failures))]
+    assert "SystemExit" in completed.stderr
 
 
 def test_read_line_success() -> None:
