@@ -218,7 +218,9 @@ class Frontend(ABC):
 
         .. code:: python
 
-            frontend = Frontend(*Frontend.create_args_from_folder(project_folder))
+            from pyproject_api import SubprocessFrontend
+
+            frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(project_folder)[:-1])
         """
         folder = folder.absolute()
         py_project_toml = folder / "pyproject.toml"
