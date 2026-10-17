@@ -349,6 +349,35 @@ def test_bad_return_type_build_wheel(local_builder: Callable[[str], Path]) -> No
     assert exc.exc_type == "TypeError"
 
 
+@pytest.mark.parametrize("value", ["Path('demo.whl')", "b'demo.whl'", "{'demo.whl'}"])
+def test_non_serializable_hook_result(value: str, local_builder: Callable[[str], Path]) -> None:
+    root = local_builder(f"""
+        import sys
+        from pathlib import Path
+
+        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
+            print("hook stdout")
+            print("hook stderr", file=sys.stderr)
+            if config_settings is None:
+                return {value}
+            return "demo-1.0-py3-none-any.whl"
+        """)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+
+    with pytest.raises(BackendFailed) as context:
+        frontend.build_wheel(root / "dist")
+
+    exc = context.value
+    assert exc.code == 1
+    assert exc.exc_type == "TypeError"
+    assert "not JSON serializable" in exc.exc_msg
+    assert "hook stdout" in exc.out
+    assert "hook stderr" in exc.err
+    assert "TypeError" in exc.err
+    result = frontend.build_wheel(root / "dist", config_settings={})
+    assert result.wheel.name == "demo-1.0-py3-none-any.whl"
+
+
 def test_bad_return_type_prepare_metadata_for_build_wheel(local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None): return 1")
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
