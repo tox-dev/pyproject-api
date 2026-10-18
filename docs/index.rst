@@ -8,3 +8,4 @@
 
    self
    api
+   changelog
