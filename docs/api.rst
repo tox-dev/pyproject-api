@@ -10,6 +10,12 @@ Frontend
 --------
 .. autoclass:: Frontend
 
+Build and metadata directory arguments may be relative to the caller's current
+working directory. They are passed to the backend as absolute paths, since the
+backend runs from the project directory. Result paths retain the spelling of the
+directory argument. Configuration settings and generic command arguments are
+passed through unchanged.
+
 .. autoclass:: OptionalHooks
 
 Exceptions
