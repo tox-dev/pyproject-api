@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import sleep
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, NoReturn, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, NoReturn, TypedDict, cast
 from zipfile import ZipFile
 
 from packaging.requirements import Requirement
@@ -348,9 +348,16 @@ class Frontend(ABC):
         return MetadataForBuildWheelResult(metadata_directory / basename, out, err)
 
     def _check_metadata_dir(self, metadata_directory: Path) -> None:
-        if metadata_directory.resolve() == self._root.resolve():
-            msg = f"the project root and the metadata directory can't be the same {self._root}"
-            raise RuntimeError(msg)
+        metadata_path: Final[Path] = metadata_directory.resolve()
+        project_root: Final[Path] = self._root.resolve()
+        if metadata_path == project_root:
+            same_root_message: Final[str] = (
+                f"the project root and the metadata directory can't be the same {self._root}"
+            )
+            raise RuntimeError(same_root_message)
+        if metadata_path in project_root.parents:
+            ancestor_message: Final[str] = f"the metadata directory can't contain the project root {self._root}"
+            raise RuntimeError(ancestor_message)
         if metadata_directory.exists():  # start with fresh
             ensure_empty_dir(metadata_directory)
         metadata_directory.mkdir(parents=True, exist_ok=True)

@@ -5,7 +5,7 @@ import subprocess  # ruff:ignore[suspicious-subprocess-import]
 import sys
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Final, Literal
 
 import pytest
 from packaging.requirements import Requirement
@@ -398,6 +398,46 @@ def test_prepare_metadata_for_build_wheel_meta_is_root(local_builder: Callable[[
         frontend.prepare_metadata_for_build_wheel(tmp_path)
 
     assert str(context.value) == f"the project root and the metadata directory can't be the same {tmp_path}"
+
+
+@pytest.mark.parametrize("hook", ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"])
+@pytest.mark.parametrize("alias", [False, True], ids=["directory", "symlink"])
+def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, alias: bool) -> None:
+    # The old cleanup can remove the whole ancestor, so keep it inside tmp_path.
+    ancestor: Final[Path] = tmp_path / "sandbox"
+    root: Final[Path] = ancestor / "project"
+    root.mkdir(parents=True)
+    source: Final[Path] = root / "build_tester.py"
+    source.write_text("source content\n")
+    unrelated: Final[Path] = ancestor / "unrelated.txt"
+    unrelated.write_text("keep me")
+    metadata_directory: Final[Path] = tmp_path / "alias" if alias else ancestor
+    if alias:
+        metadata_directory.symlink_to(ancestor, target_is_directory=True)
+    frontend: Final[SubprocessFrontend] = SubprocessFrontend(root, (root,), "build_tester", None, ())
+
+    with pytest.raises(RuntimeError, match="the metadata directory can't contain the project root"):
+        getattr(frontend, hook)(metadata_directory)
+
+    assert source.read_text() == "source content\n"
+    assert unrelated.read_text() == "keep me"
+
+
+@pytest.mark.parametrize("hook", ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"])
+def test_prepare_metadata_allows_sibling_directory(tmp_path: Path, hook: str) -> None:
+    root: Final[Path] = tmp_path / "project"
+    root.mkdir()
+    source: Final[Path] = root / "build_tester.py"
+    source.write_text("")
+    metadata_directory: Final[Path] = tmp_path / "project-metadata"
+    metadata_directory.mkdir()
+    (metadata_directory / "stale.txt").write_text("remove me")
+    frontend: Final[SubprocessFrontend] = SubprocessFrontend(root, (root,), "build_tester", None, ())
+
+    assert getattr(frontend, hook)(metadata_directory) is None
+
+    assert source.is_file()
+    assert list(metadata_directory.iterdir()) == []
 
 
 def test_no_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str], Path]) -> None:
