@@ -29,6 +29,7 @@ extensions = [
     "sphinx.ext.intersphinx",
 ]
 master_doc, source_suffix = "index", ".rst"
+exclude_patterns = ["changelog.d/*"]
 
 html_theme = "furo"
 html_title, html_last_updated_fmt = "pyproject-api docs", "%Y-%m-%dT%H:%M:%S"

@@ -48,7 +48,7 @@ dynamic = [
 dependencies = [
   "packaging>=26.3",
 ]
-urls.Changelog = "https://github.com/tox-dev/pyproject-api/releases"
+urls.Changelog = "https://pyproject-api.readthedocs.io/en/latest/changelog.html"
 urls.Homepage = "https://pyproject-api.readthedocs.io"
 urls.Source = "https://github.com/tox-dev/pyproject-api"
 urls.Tracker = "https://github.com/tox-dev/pyproject-api/issues"
@@ -166,3 +166,14 @@ paths.source = [
 report.omit = []
 html.show_contexts = true
 html.skip_covered = false
+
+[tool.towncrier]
+name = "pyproject-api"
+directory = "docs/changelog.d"
+filename = "docs/changelog.rst"
+title_format = "v{version} ({project_date})"
+type = [
+  { directory = "feature", name = "Features", showcontent = true },
+  { directory = "bugfix", name = "Bug fixes", showcontent = true },
+  { directory = "doc", name = "Documentation", showcontent = true },
+]
