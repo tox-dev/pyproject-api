@@ -385,7 +385,7 @@ class Frontend(ABC):
         if basename is None:
             return None
         if not isinstance(basename, str):
-            self._unexpected_response("prepare_metadata_for_build_wheel", basename, str, out, err)
+            self._unexpected_response("prepare_metadata_for_build_editable", basename, str, out, err)
         result = metadata_directory / basename
         return MetadataForBuildEditableResult(result, out, err)
 
