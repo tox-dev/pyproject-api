@@ -348,8 +348,13 @@ class Frontend(ABC):
         return MetadataForBuildWheelResult(metadata_directory / basename, out, err)
 
     def _check_metadata_dir(self, metadata_directory: Path) -> None:
-        if metadata_directory.resolve() == self._root.resolve():
+        metadata_path = metadata_directory.resolve()
+        project_root = self._root.resolve()
+        if metadata_path == project_root:
             msg = f"the project root and the metadata directory can't be the same {self._root}"
+            raise RuntimeError(msg)
+        if metadata_path in project_root.parents:
+            msg = f"the metadata directory can't contain the project root {self._root}"
             raise RuntimeError(msg)
         if metadata_directory.exists():  # start with fresh
             ensure_empty_dir(metadata_directory)
