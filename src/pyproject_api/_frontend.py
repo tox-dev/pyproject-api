@@ -338,7 +338,7 @@ class Frontend(ABC):
         if self.optional_hooks["prepare_metadata_for_build_wheel"]:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_wheel",
-                metadata_directory=metadata_directory,
+                metadata_directory=metadata_directory.absolute(),
                 config_settings=config_settings,
             )
         if basename is None:
@@ -379,7 +379,7 @@ class Frontend(ABC):
         if self.optional_hooks["prepare_metadata_for_build_editable"]:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_editable",
-                metadata_directory=metadata_directory,
+                metadata_directory=metadata_directory.absolute(),
                 config_settings=config_settings,
             )
         if basename is None:
@@ -400,7 +400,7 @@ class Frontend(ABC):
         sdist_directory.mkdir(parents=True, exist_ok=True)
         basename, out, err = self._send(
             cmd="build_sdist",
-            sdist_directory=sdist_directory,
+            sdist_directory=sdist_directory.absolute(),
             config_settings=config_settings,
         )
         if not isinstance(basename, str):
@@ -424,9 +424,9 @@ class Frontend(ABC):
         wheel_directory.mkdir(parents=True, exist_ok=True)
         basename, out, err = self._send(
             cmd="build_wheel",
-            wheel_directory=wheel_directory,
+            wheel_directory=wheel_directory.absolute(),
             config_settings=config_settings,
-            metadata_directory=metadata_directory,
+            metadata_directory=None if metadata_directory is None else metadata_directory.absolute(),
         )
         if not isinstance(basename, str):
             self._unexpected_response("build_wheel", basename, str, out, err)
@@ -449,9 +449,9 @@ class Frontend(ABC):
         wheel_directory.mkdir(parents=True, exist_ok=True)
         basename, out, err = self._send(
             cmd="build_editable",
-            wheel_directory=wheel_directory,
+            wheel_directory=wheel_directory.absolute(),
             config_settings=config_settings,
-            metadata_directory=metadata_directory,
+            metadata_directory=None if metadata_directory is None else metadata_directory.absolute(),
         )
         if not isinstance(basename, str):
             self._unexpected_response("build_editable", basename, str, out, err)

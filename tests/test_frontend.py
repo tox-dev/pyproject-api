@@ -222,6 +222,102 @@ def demo_pkg_inline() -> Path:
     return Path(__file__).absolute().parent / "demo_pkg_inline"
 
 
+@pytest.mark.parametrize("target", ["sdist", "wheel", "editable"])
+@pytest.mark.parametrize("relative", [True, False], ids=["relative", "absolute"])
+def test_build_output_from_caller_directory(
+    target: str, relative: bool, tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    directory = Path("artifacts") if relative else tmp_path / "artifacts"
+
+    result = getattr(frontend, f"build_{target}")(directory)
+    artifact = getattr(result, "sdist" if target == "sdist" else "wheel")
+
+    assert artifact.parent == directory
+    assert artifact.is_file()
+    assert artifact.absolute().parent == tmp_path / "artifacts"
+
+
+@pytest.mark.parametrize("target", ["wheel", "editable"])
+@pytest.mark.parametrize("relative", [True, False], ids=["relative", "absolute"])
+def test_prepare_metadata_from_caller_directory(
+    target: str,
+    relative: bool,
+    tmp_path: Path,
+    local_builder: Callable[[str], Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = local_builder(r"""
+        from pathlib import Path
+
+        def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None):
+            metadata = Path(metadata_directory) / "demo.dist-info"
+            metadata.mkdir()
+            (metadata / "METADATA").write_text("Name: demo\nVersion: 1.0\n")
+            return metadata.name
+
+        prepare_metadata_for_build_editable = prepare_metadata_for_build_wheel
+        """)
+    caller = tmp_path / "caller"
+    caller.mkdir()
+    monkeypatch.chdir(caller)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+    directory = Path("metadata") if relative else caller / "metadata"
+
+    result = getattr(frontend, f"prepare_metadata_for_build_{target}")(directory)
+
+    assert result is not None
+    assert result.metadata == directory / "demo.dist-info"
+    assert (result.metadata / "METADATA").read_text() == "Name: demo\nVersion: 1.0\n"
+
+
+@pytest.mark.parametrize("target", ["wheel", "editable"])
+def test_build_with_relative_metadata_directory(
+    target: str,
+    tmp_path: Path,
+    local_builder: Callable[[str], Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = local_builder("""
+        from pathlib import Path
+
+        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
+            assert config_settings == {"source": "relative/source"}
+            content = (Path(metadata_directory) / "METADATA").read_text()
+            (Path(wheel_directory) / "demo.whl").write_text(content)
+            return "demo.whl"
+
+        build_editable = build_wheel
+        """)
+    caller = tmp_path / "caller"
+    caller.mkdir()
+    monkeypatch.chdir(caller)
+    metadata = Path("metadata")
+    metadata.mkdir()
+    (metadata / "METADATA").write_text("existing metadata")
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+
+    result = getattr(frontend, f"build_{target}")(
+        Path("artifacts"), metadata_directory=metadata, config_settings={"source": "relative/source"}
+    )
+
+    assert result.wheel == Path("artifacts/demo.whl")
+    assert result.wheel.read_text() == "existing metadata"
+
+
+def test_generic_command_retains_relative_path(local_builder: Callable[[str], Path]) -> None:
+    root = local_builder("""
+        def echo(path, config_settings):
+            return [path, config_settings]
+        """)
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+
+    result, _, _ = frontend.send_cmd("echo", path=Path("relative/path"), config_settings={"source": "relative/source"})
+
+    assert result == [str(Path("relative/path")), {"source": "relative/source"}]
+
+
 def test_backend_no_prepare_wheel(tmp_path: Path, demo_pkg_inline: Path) -> None:
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     result = frontend.prepare_metadata_for_build_wheel(tmp_path)
