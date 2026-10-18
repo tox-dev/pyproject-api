@@ -564,7 +564,7 @@ def test_backend_prepare_editable_bad(tmp_path: Path, demo_pkg_inline: Path, mon
     assert " prepare_metadata_for_build_editable " in exc.out
     assert not exc.args
     assert exc.exc_type == "TypeError"
-    assert exc.exc_msg == "'prepare_metadata_for_build_wheel' on 'build' returned 1 but expected type <class 'str'>"
+    assert exc.exc_msg == "'prepare_metadata_for_build_editable' on 'build' returned 1 but expected type <class 'str'>"
 
 
 def test_backend_build_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
