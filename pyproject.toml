@@ -8,12 +8,12 @@ requires = [
 
 [project]
 name = "pyproject-api"
+import-names = [ "pyproject_api" ]
 description = "API to interact with the python pyproject.toml based projects"
 keywords = [
-  "environments",
-  "isolated",
-  "testing",
-  "virtual",
+  "build-system",
+  "metadata",
+  "pyproject",
 ]
 license = "MIT"
 maintainers = [
@@ -25,9 +25,7 @@ authors = [
 requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
-  "Framework :: tox",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: MacOS :: MacOS X",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
@@ -38,7 +36,6 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: 3.15",
   "Topic :: Software Development :: Libraries",
-  "Topic :: Software Development :: Testing",
   "Topic :: Utilities",
 ]
 dynamic = [
@@ -48,7 +45,7 @@ dynamic = [
 dependencies = [
   "packaging>=26.3",
 ]
-urls.Changelog = "https://pyproject-api.readthedocs.io/en/latest/changelog.html"
+urls.Changelog = "https://github.com/tox-dev/pyproject-api/blob/main/docs/changelog.rst"
 urls.Homepage = "https://pyproject-api.readthedocs.io"
 urls.Source = "https://github.com/tox-dev/pyproject-api"
 urls.Tracker = "https://github.com/tox-dev/pyproject-api/issues"
