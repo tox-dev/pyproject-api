@@ -29,6 +29,15 @@ repos:
       - id: ruff-format
       - id: ruff
         args: ["--fix", "--unsafe-fixes", "--exit-non-zero-on-fix"]
+  - repo: https://github.com/LilSpazJoekp/docstrfmt
+    rev: v2.2.1
+    hooks:
+      - id: docstrfmt
+        files: |
+          (?x)
+          ^docs/changelog[.]rst$  # Only the generated release history.
+        args: ["-l", "120", "--preserve-adornments"]
+        additional_dependencies: ["sphinx>=9.1"]
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.31.1
     hooks:
