@@ -86,10 +86,19 @@ pkg-meta = [
   "twine>=7",
   "uv>=0.12.22",
 ]
+release = [
+  "docstrfmt>=2.2.1",
+  "prek>=0.5",
+  "release-creator @ git+https://github.com/tox-dev/release-creator@6377ed5b470b66fca2bf482ca1a73d95e611f517",
+  "towncrier>=26.9",
+]
 
 [tool.hatch]
 version.source = "vcs"
 build.hooks.vcs.version-file = "src/pyproject_api/_version.py"
+
+[tool.uv]
+dependency-groups.release = { requires-python = ">=3.15" }
 
 [tool.ruff]
 line-length = 120
@@ -171,9 +180,17 @@ html.skip_covered = false
 name = "pyproject-api"
 directory = "docs/changelog.d"
 filename = "docs/changelog.rst"
-title_format = "v{version} ({project_date})"
+template = "docs/changelog.d/template.jinja2"
+title_format = false
+issue_format = ""
 type = [
-  { directory = "feature", name = "Features", showcontent = true },
-  { directory = "bugfix", name = "Bug fixes", showcontent = true },
+  { directory = "feature", name = "Added", showcontent = true },
+  { directory = "change", name = "Changes", showcontent = true },
+  { directory = "bugfix", name = "Fixed", showcontent = true },
   { directory = "doc", name = "Documentation", showcontent = true },
+  { directory = "security", name = "Security", showcontent = true },
+  { directory = "performance", name = "Performance", showcontent = true },
+  { directory = "deprecation", name = "Deprecated", showcontent = true },
+  { directory = "removal", name = "Removed", showcontent = true },
+  { directory = "packaging", name = "Packaging", showcontent = true },
 ]
