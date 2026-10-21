@@ -64,7 +64,7 @@ class SubprocessFrontend(Frontend):
     @contextmanager
     def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Generator[SubprocessCmdStatus, None, None]:  # ruff:ignore[unused-method-argument]
         env = os.environ.copy()
-        backend = os.pathsep.join(str(i) for i in self._backend_paths).strip()
+        backend = os.pathsep.join(str(i) for i in self._backend_paths)
         if backend:
             env["PYTHONPATH"] = backend
         process = Popen(  # ruff:ignore[subprocess-without-shell-equals-true]  # fixed argv, no shell
