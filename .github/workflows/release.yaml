@@ -8,9 +8,10 @@ env:
   dists-artifact-name: python-package-distributions
 jobs:
   build:
-    uses: tox-dev/github-workflows/.github/workflows/validate-python-release.yaml@560223eaaf4a15385415c521564155a50653fa52
+    uses: tox-dev/github-workflows/.github/workflows/validate-python-release.yaml@8db87d4730353b61630d66cbc592d6bed0c85d2b
     permissions:
       contents: read
+      pull-requests: read
     with:
       changelog: docs/changelog.rst
       fragments: docs/changelog.d
@@ -26,7 +27,7 @@ jobs:
         with:
           name: github-release-notes
           path: ${{ runner.temp }}/github-release-notes
-      - uses: tox-dev/github-workflows/publish-github-release@560223eaaf4a15385415c521564155a50653fa52
+      - uses: tox-dev/github-workflows/publish-github-release@8db87d4730353b61630d66cbc592d6bed0c85d2b
         with:
           repository: ${{ github.repository }}
           tag: ${{ github.ref_name }}
@@ -56,7 +57,7 @@ jobs:
         with:
           name: ${{ env.dists-artifact-name }}
           path: dist/
-      - uses: tox-dev/github-workflows/reconcile-pypi-artifacts@560223eaaf4a15385415c521564155a50653fa52
+      - uses: tox-dev/github-workflows/reconcile-pypi-artifacts@8db87d4730353b61630d66cbc592d6bed0c85d2b
         id: stage
         with:
           project: pyproject-api
@@ -88,7 +89,7 @@ jobs:
         with:
           name: pypi-missing-manifest
           path: ${{ runner.temp }}/pypi-manifest
-      - uses: tox-dev/github-workflows/select-pypi-artifacts@560223eaaf4a15385415c521564155a50653fa52
+      - uses: tox-dev/github-workflows/select-pypi-artifacts@8db87d4730353b61630d66cbc592d6bed0c85d2b
         with:
           dist: dist
           manifest: ${{ runner.temp }}/pypi-manifest/pypi-missing-names.txt
@@ -122,7 +123,7 @@ jobs:
         with:
           name: ${{ env.dists-artifact-name }}
           path: dist/
-      - uses: tox-dev/github-workflows/reconcile-pypi-artifacts@560223eaaf4a15385415c521564155a50653fa52
+      - uses: tox-dev/github-workflows/reconcile-pypi-artifacts@8db87d4730353b61630d66cbc592d6bed0c85d2b
         with:
           project: pyproject-api
           version: ${{ github.ref_name }}
@@ -220,7 +221,7 @@ jobs:
         with:
           name: contributor-metadata
           path: ${{ runner.temp }}/contributor-metadata
-      - uses: tox-dev/github-workflows/render-release-notes@560223eaaf4a15385415c521564155a50653fa52
+      - uses: tox-dev/github-workflows/render-release-notes@8db87d4730353b61630d66cbc592d6bed0c85d2b
         with:
           tag: ${{ github.ref_name }}
           changelog: docs/changelog.rst
@@ -245,7 +246,7 @@ jobs:
         with:
           name: github-release-notes
           path: ${{ runner.temp }}/github-release-notes
-      - uses: tox-dev/github-workflows/publish-github-release@560223eaaf4a15385415c521564155a50653fa52
+      - uses: tox-dev/github-workflows/publish-github-release@8db87d4730353b61630d66cbc592d6bed0c85d2b
         with:
           repository: ${{ github.repository }}
           tag: ${{ github.ref_name }}
