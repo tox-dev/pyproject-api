@@ -8,14 +8,11 @@ on:
     types: [opened, synchronize, reopened, labeled, unlabeled]
   schedule:
     - cron: "0 8 * * *"
-
 concurrency:
   group: check-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 jobs:
   test:
     name: test ${{ matrix.env }} - ${{ matrix.os }}
@@ -38,9 +35,9 @@ jobs:
           - windows-2025-vs2026
           - macos-26
         exclude:
-          - { os: macos-26, env: "type" }
-          - { os: macos-26, env: "dev" }
-          - { os: macos-26, env: "pkg_meta" }
+          - {os: macos-26, env: "type"}
+          - {os: macos-26, env: "dev"}
+          - {os: macos-26, env: "pkg_meta"}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,7 +70,6 @@ jobs:
           PYTEST_ADDOPTS: "-vv --durations=20"
           DIFF_AGAINST: HEAD
           UV_PYTHON_PREFERENCE: only-managed
-
   changelog:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-26.04
@@ -94,7 +90,6 @@ jobs:
           uv pip sync --preview-features pylock --python "$RUNNER_TEMP/release-tools/bin/python" --group release pylock.toml
           echo "$RUNNER_TEMP/release-tools/bin" >>"$GITHUB_PATH"
       - uses: tox-dev/github-workflows/validate-news@8db87d4730353b61630d66cbc592d6bed0c85d2b
-
   hook-update-cooldown:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-26.04
@@ -109,7 +104,6 @@ jobs:
           repository: ${{ github.repository }}
           pull-request: ${{ github.event.pull_request.number }}
           head-sha: ${{ github.event.pull_request.head.sha }}
-
   gate:
     name: Required checks pass
     if: always()

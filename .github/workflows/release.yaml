@@ -104,9 +104,7 @@ jobs:
   verify-pypi:
     needs: [stage-pypi, release, stage-github-release]
     if: >-
-      always() && needs.stage-github-release.result == 'success' && needs.stage-pypi.result == 'success' &&
-      (needs.release.result == 'success' ||
-      (needs.release.result == 'skipped' && needs.stage-pypi.outputs.missing_count == '0'))
+      always() && needs.stage-github-release.result == 'success' && needs.stage-pypi.result == 'success' && (needs.release.result == 'success' || (needs.release.result == 'skipped' && needs.stage-pypi.outputs.missing_count == '0'))
     runs-on: ubuntu-26.04
     permissions:
       contents: read
