@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from sphinx.domains.python import PythonDomain
@@ -27,10 +28,14 @@ extensions = [
     "sphinx_autodoc_typehints",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "sphinxcontrib.towncrier.ext",
 ]
 master_doc, source_suffix = "index", ".rst"
 exclude_patterns = ["changelog.d/*"]
 autosectionlabel_maxdepth = 2
+towncrier_draft_autoversion_mode = "draft"
+towncrier_draft_include_empty = True
+towncrier_draft_working_directory = Path(__file__).parent.parent
 
 html_theme = "furo"
 html_title, html_last_updated_fmt = "pyproject-api docs", "%Y-%m-%dT%H:%M:%S"

@@ -1,6 +1,8 @@
 Release History
 ===============
 
+.. towncrier-draft-entries:: Draft
+
 .. towncrier release notes start
 
 .. _release-1-12-0:
