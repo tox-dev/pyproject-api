@@ -6,9 +6,10 @@ behavior. Put each distinct change in its own ``docs/changelog.d/+short-name.<ca
 contain a pull request number; release preparation links it to the squash-merged pull request.
 
 Use ``feature`` for new behavior and Python support changes, ``change`` for changes to existing behavior, ``bugfix``
-for corrections, and ``doc`` for documentation changes users need to know about. Use ``security``, ``performance``,
-``deprecation``, ``removal``, or ``packaging`` when those describe a user-facing change more precisely. The rendered
-changelog calls the first four categories Added, Changes, Fixed, and Documentation. Empty categories are omitted.
+for corrections, and ``doc`` for documentation changes users need to know about. Use ``breaking``, ``security``,
+``performance``, ``deprecation``, ``removal``, or ``packaging`` when those describe a user-facing change more precisely.
+The rendered changelog calls the first four categories Added, Changes, Fixed, and Documentation. Empty categories are
+omitted.
 
 For example, a change to backend path handling can use ``docs/changelog.d/+backend-paths.bugfix.rst``:
 
