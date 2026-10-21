@@ -86,7 +86,7 @@ pkg-meta = [
 release = [
   "docstrfmt>=2.2.1",
   "prek>=0.5",
-  "release-creator @ git+https://github.com/tox-dev/release-creator@6377ed5b470b66fca2bf482ca1a73d95e611f517",
+  "release-creator @ git+https://github.com/tox-dev/release-creator@cf1d89453fc88887e5cf924f6bc1b83157d3a6ac",
   "towncrier>=26.9",
 ]
 
@@ -187,6 +187,7 @@ type = [
   { directory = "change", name = "Changes", showcontent = true },
   { directory = "bugfix", name = "Fixed", showcontent = true },
   { directory = "doc", name = "Documentation", showcontent = true },
+  { directory = "breaking", name = "Breaking changes", showcontent = true },
   { directory = "security", name = "Security", showcontent = true },
   { directory = "performance", name = "Performance", showcontent = true },
   { directory = "deprecation", name = "Deprecated", showcontent = true },
