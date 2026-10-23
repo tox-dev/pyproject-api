@@ -150,6 +150,18 @@ def test_backend_output_with_invalid_bytes(
     assert (wheel, "before\\xffafter" in captured) == ("demo-1.0-py3-none-any.whl", True)
 
 
+def test_backend_output_with_unencodable_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PYTHONIOENCODING", "ascii")  # like a Windows ANSI code page that lacks a path character
+    root: Final[Path] = tmp_path / "pröject"
+    root.mkdir()
+    (root / "build_tester.py").write_text("def build_sdist(sdist_directory, config_settings=None): return 'out.tar.gz'")
+    frontend: Final[SubprocessFrontend] = SubprocessFrontend(root, (root,), "build_tester", None, ())
+
+    result = frontend.build_sdist(root / "dist")
+
+    assert (result.sdist, "pr\\xf6ject" in result.out) == (root / "dist" / "out.tar.gz", True)
+
+
 def test_large_command_with_failed_backend(local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder('raise RuntimeError("backend import failed")')
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])

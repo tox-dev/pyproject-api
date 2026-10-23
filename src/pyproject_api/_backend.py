@@ -150,4 +150,6 @@ def read_line(fd=0):
 
 
 if __name__ == "__main__":
+    # printed paths may hold characters the stdout encoding cannot represent
+    sys.stdout.reconfigure(errors="backslashreplace")  # type: ignore[unresolved-attribute]
     sys.exit(run(sys.argv[1:]))
