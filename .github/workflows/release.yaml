@@ -54,6 +54,7 @@ jobs:
         with:
           packages-dir: dist
           attestations: true
+          skip-existing: true
   verify-pypi:
     needs:
       - build
