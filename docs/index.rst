@@ -8,4 +8,5 @@
 
    self
    api
+   contributing
    changelog

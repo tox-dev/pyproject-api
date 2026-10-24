@@ -5,17 +5,14 @@ on:
     branches: ["main"]
     tags-ignore: ["**"]
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened]
   schedule:
     - cron: "0 8 * * *"
-
 concurrency:
   group: check-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 jobs:
   test:
     name: test ${{ matrix.env }} - ${{ matrix.os }}
@@ -35,12 +32,12 @@ jobs:
           - pkg_meta
         os:
           - ubuntu-26.04
-          - windows-latest
-          - macos-latest
+          - windows-2025-vs2026
+          - macos-26
         exclude:
-          - { os: macos-latest, env: "type" }
-          - { os: macos-latest, env: "dev" }
-          - { os: macos-latest, env: "pkg_meta" }
+          - {os: macos-26, env: "type"}
+          - {os: macos-26, env: "dev"}
+          - {os: macos-26, env: "pkg_meta"}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,6 +46,7 @@ jobs:
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: latest-known
           python-version: "3.15"
           enable-cache: false
           cache-dependency-glob: "pyproject.toml"
@@ -56,7 +54,7 @@ jobs:
       - name: Add .local/bin to Windows PATH
         if: runner.os == 'Windows'
         shell: bash
-        run: echo "$USERPROFILE/.local/bin" >> $GITHUB_PATH
+        run: echo "$USERPROFILE/.local/bin" >>"$GITHUB_PATH"
       - name: Install tox
         run: uv tool install --python-preference only-managed --python 3.15 tox --with tox-uv
       - name: Install Python
@@ -72,34 +70,33 @@ jobs:
           PYTEST_ADDOPTS: "-vv --durations=20"
           DIFF_AGAINST: HEAD
           UV_PYTHON_PREFERENCE: only-managed
-
-  changelog:
-    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'skip news')
+  hook-update-cooldown:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-26.04
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: tox-dev/github-workflows/check-hook-update-cooldown@55f51f9b5cc0b40f280155a95de2d4f0ecbf7be1 # v3.0.0
         with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-        with:
-          python-version: "3.15"
-          enable-cache: false
-      - run: uvx towncrier check --compare-with "origin/${GITHUB_BASE_REF}"
-
+          release-app-client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+        env:
+          GH_TOKEN: ${{ github.token }}
   gate:
-    name: Required checks pass
-    if: always()
-    needs: [test, changelog]
+    name: ${{ github.event_name == 'pull_request' && 'Required checks pass' || 'Non-PR checks pass' }}
+    if: ${{ !cancelled() }} # codespell:ignore cancelled
+    needs: [test, hook-update-cooldown]
     runs-on: ubuntu-26.04
     steps:
       - env:
           NEEDS_JSON: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          jq -e '
+          jq -e --arg event "$EVENT_NAME" '
             all(
               to_entries[];
               .value.result == "success" or
-              (.key == "changelog" and .value.result == "skipped")
+              (.key == "hook-update-cooldown" and .value.result == "skipped" and $event != "pull_request")
             )
-          ' <<< "$NEEDS_JSON"
+          ' <<<"$NEEDS_JSON"
