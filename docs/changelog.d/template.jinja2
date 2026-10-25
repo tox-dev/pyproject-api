@@ -1,0 +1,23 @@
+.. _release-{{ versiondata.version|replace('.', '-') }}:
+
+{% if versiondata.version == 'Draft' %}
+Draft
+-----
+{% else %}
+v{{ versiondata.version }} ({{ versiondata.date }})
+{{ "-" * ((versiondata.version + versiondata.date)|length + 4) }}
+{% endif %}
+
+{% for section in sections %}
+{% for category in definitions if category in sections[section] and sections[section][category] %}
+.. _release-{{ versiondata.version|replace('.', '-') }}-{{ definitions[category]['name']|lower|replace(' ', '-') }}:
+
+{{ definitions[category]['name'] }}
+{{ "^" * (definitions[category]['name']|length) }}
+
+{% for text, values in sections[section][category].items() %}
+- {{ text }}{{ ' (' ~ (values|join(', ')) ~ ')' if values|join(', ') else '' }}
+{% endfor %}
+
+{% endfor %}
+{% endfor %}
