@@ -77,7 +77,13 @@ class SubprocessFrontend(Frontend):
             cwd=self._root,
             env=env,
         )
-        yield SubprocessCmdStatus(process, f"{os.linesep}{msg}{os.linesep}")
+        status = SubprocessCmdStatus(process, f"{os.linesep}{msg}{os.linesep}")
+        try:
+            yield status
+        finally:
+            if process.poll() is None:
+                process.kill()
+            status.join()
 
     def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
         """
