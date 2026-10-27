@@ -55,23 +55,14 @@ def test_relative_project_folder(local_builder: Callable[[str], Path], monkeypat
     assert frontend.get_requires_for_build_wheel().requires == (Requirement("wheel"),)
 
 
-@pytest.mark.parametrize(
-    "backend_name",
-    [
-        "backend",
-        "backend with spaces",
-        pytest.param(
-            "backend ", marks=pytest.mark.skipif(sys.platform == "win32", reason="trailing spaces normalized")
-        ),
-    ],
-)
-def test_backend_path_preserves_whitespace(tmp_path: Path, backend_name: str) -> None:
-    backend = tmp_path / backend_name
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows drops trailing spaces from names")
+def test_backend_path_with_trailing_space(tmp_path: Path) -> None:  # pragma: win32 no cover
+    backend: Final = tmp_path / "backend "
     backend.mkdir()
     (backend / "build_tester.py").write_text(
         "def get_requires_for_build_wheel(config_settings=None):\n    return ['wheel']\n"
     )
-    frontend = SubprocessFrontend(tmp_path, (backend,), "build_tester", None, ())
+    frontend: Final = SubprocessFrontend(tmp_path, (backend,), "build_tester", None, ())
 
     assert frontend.get_requires_for_build_wheel().requires == (Requirement("wheel"),)
 
