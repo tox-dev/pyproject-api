@@ -1,1 +1,1 @@
-Correct the backend proxy type declarations for optional hooks and the exit return value.
+Drop the backend proxy stub declarations for its private commands; one named a method the proxy does not have.

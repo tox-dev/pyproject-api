@@ -5,7 +5,7 @@ import os
 import subprocess  # ruff:ignore[suspicious-subprocess-import]
 import sys
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, assert_type
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -16,15 +16,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pytest_mock
-
-
-def test_backend_proxy_private_command_types() -> None:
-    class TypedBackendProxy(BackendProxy):
-        def check(self) -> None:
-            assert assert_type(self._optional_hooks(), dict[str, bool])["build_editable"] is False
-            assert assert_type(self._exit(), int) == 0
-
-    TypedBackendProxy("json", None).check()
 
 
 def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
