@@ -5,7 +5,7 @@ import sys
 from contextlib import contextmanager
 from subprocess import PIPE, Popen  # ruff:ignore[suspicious-subprocess-import]
 from threading import Thread
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from ._frontend import CmdStatus, Frontend
 
@@ -77,12 +77,11 @@ class SubprocessFrontend(Frontend):
             cwd=self._root,
             env=env,
         )
-        status = SubprocessCmdStatus(process, f"{os.linesep}{msg}{os.linesep}")
+        status: Final = SubprocessCmdStatus(process, f"{os.linesep}{msg}{os.linesep}")
         try:
             yield status
         finally:
-            if process.poll() is None:
-                process.kill()
+            process.kill()
             status.join()
 
     def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:

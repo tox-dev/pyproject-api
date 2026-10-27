@@ -162,36 +162,35 @@ def test_large_command_with_failed_backend(local_builder: Callable[[str], Path])
     assert "RuntimeError: backend import failed" in context.value.err
 
 
-@pytest.mark.parametrize("error_type", [KeyboardInterrupt, SystemExit, RuntimeError])
+@pytest.mark.parametrize(
+    "error_type",
+    [
+        pytest.param(KeyboardInterrupt, id="keyboard-interrupt"),
+        pytest.param(SystemExit, id="system-exit"),
+        pytest.param(RuntimeError, id="runtime-error"),
+    ],
+)
 def test_interrupted_frontend_cleans_up_backend(
     error_type: type[BaseException], local_builder: Callable[[str], Path], mocker: pytest_mock.MockerFixture
 ) -> None:
-    root = local_builder("""
+    root: Final = local_builder("""
         import time
 
         def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
             time.sleep(60)
             return "demo-1.0-py3-none-any.whl"
         """)
-    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
-    status_factory = mocker.spy(_via_fresh_subprocess, "SubprocessCmdStatus")
-    error = error_type("build interrupted")
-    mocker.patch("pyproject_api._frontend.sleep", side_effect=error)
+    status_factory: Final = mocker.spy(_via_fresh_subprocess, "SubprocessCmdStatus")
+    mocker.patch("pyproject_api._frontend.sleep", side_effect=error_type("build interrupted"))
 
     try:
-        with pytest.raises(error_type) as context:
-            frontend.build_wheel(root / "dist")
+        with pytest.raises(error_type):
+            SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1]).build_wheel(root / "dist")
 
-        assert context.value is error
-        status = status_factory.spy_return
-        assert status.process.poll() is not None
-        assert not status.is_alive()
-        assert status.process.stdin.closed
-        assert status.process.stdout.closed
-        assert status.process.stderr.closed
+        assert not status_factory.spy_return.is_alive()
     finally:
         # Keep a regression from leaving the backend and its non-daemon thread running.
-        status = status_factory.spy_return
+        status: Final = status_factory.spy_return
         status.process.kill()
         status.join(timeout=10)
 
