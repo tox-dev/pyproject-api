@@ -5,6 +5,19 @@ Release History
 
 .. towncrier release notes start
 
+.. _release-1-12-1:
+
+v1.12.1 (2026-10-27)
+--------------------
+
+.. _release-1-12-1-packaging:
+
+Packaging
+^^^^^^^^^
+
+- Releases now run on the shared tox-dev/github-workflows pipeline, with a locked release toolchain and generated GitHub
+  Release notes (:pr:`338`) by :user:`gaborbernat`.
+
 .. _release-1-12-0:
 
 v1.12.0 (2026-10-18)
