@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Final, Literal
 import pytest
 from packaging.requirements import Requirement
 
+from pyproject_api import _via_fresh_subprocess
 from pyproject_api._frontend import BackendFailed
 from pyproject_api._via_fresh_subprocess import SubprocessFrontend
 
@@ -159,6 +160,39 @@ def test_large_command_with_failed_backend(local_builder: Callable[[str], Path])
 
     assert "failed to start backend" in context.value.err
     assert "RuntimeError: backend import failed" in context.value.err
+
+
+@pytest.mark.parametrize(
+    "error_type",
+    [
+        pytest.param(KeyboardInterrupt, id="keyboard-interrupt"),
+        pytest.param(SystemExit, id="system-exit"),
+        pytest.param(RuntimeError, id="runtime-error"),
+    ],
+)
+def test_interrupted_frontend_cleans_up_backend(
+    error_type: type[BaseException], local_builder: Callable[[str], Path], mocker: pytest_mock.MockerFixture
+) -> None:
+    root: Final = local_builder("""
+        import time
+
+        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
+            time.sleep(60)
+            return "demo-1.0-py3-none-any.whl"
+        """)
+    status_factory: Final = mocker.spy(_via_fresh_subprocess, "SubprocessCmdStatus")
+    mocker.patch("pyproject_api._frontend.sleep", side_effect=error_type("build interrupted"))
+
+    try:
+        with pytest.raises(error_type):
+            SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1]).build_wheel(root / "dist")
+
+        assert not status_factory.spy_return.is_alive()
+    finally:
+        # Keep a regression from leaving the backend and its non-daemon thread running.
+        status: Final = status_factory.spy_return
+        status.process.kill()
+        status.join(timeout=10)
 
 
 @pytest.mark.parametrize("cmd", ["build_wheel", "build_sdist"])
