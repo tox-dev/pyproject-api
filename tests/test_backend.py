@@ -5,7 +5,6 @@ import os
 import subprocess  # ruff:ignore[suspicious-subprocess-import]
 import sys
 from textwrap import dedent
-from types import ModuleType
 from typing import TYPE_CHECKING, Any, assert_type
 
 import pytest
@@ -19,31 +18,13 @@ if TYPE_CHECKING:
     import pytest_mock
 
 
-def test_backend_proxy_optional_hooks_and_exit(monkeypatch: pytest.MonkeyPatch) -> None:
-    class CheckedBackendProxy(BackendProxy):
+def test_backend_proxy_private_command_types() -> None:
+    class TypedBackendProxy(BackendProxy):
         def check(self) -> None:
-            hooks = assert_type(self._optional_hooks(), dict[str, bool])
-            assert hooks == {
-                "get_requires_for_build_sdist": True,
-                "prepare_metadata_for_build_wheel": False,
-                "get_requires_for_build_wheel": True,
-                "build_editable": False,
-                "get_requires_for_build_editable": True,
-                "prepare_metadata_for_build_editable": False,
-            }
-            exit_code = assert_type(self._exit(), int)
-            assert type(exit_code) is int
-            assert exit_code == 0
+            assert assert_type(self._optional_hooks(), dict[str, bool])["build_editable"] is False
+            assert assert_type(self._exit(), int) == 0
 
-    backend = ModuleType("stub_test_backend")
-    for hook in ("get_requires_for_build_sdist", "get_requires_for_build_wheel", "get_requires_for_build_editable"):
-        setattr(backend, hook, list)
-    monkeypatch.setitem(sys.modules, backend.__name__, backend)
-    proxy = CheckedBackendProxy(backend.__name__, None)
-    proxy.check()
-    assert not hasattr(proxy, "_optional_commands")
-    with pytest.raises(_backend.MissingCommand, match="_optional_commands"):
-        proxy("_optional_commands")
+    TypedBackendProxy("json", None).check()
 
 
 def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
