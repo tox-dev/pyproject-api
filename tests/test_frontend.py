@@ -155,9 +155,8 @@ def test_backend_output_with_unencodable_path(tmp_path: Path, monkeypatch: pytes
     root: Final[Path] = tmp_path / "pröject"
     root.mkdir()
     (root / "build_tester.py").write_text("def build_sdist(sdist_directory, config_settings=None): return 'out.tar.gz'")
-    frontend: Final[SubprocessFrontend] = SubprocessFrontend(root, (root,), "build_tester", None, ())
 
-    result = frontend.build_sdist(root / "dist")
+    result: Final = SubprocessFrontend(root, (root,), "build_tester", None, ()).build_sdist(root / "dist")
 
     assert (result.sdist, "pr\\xf6ject" in result.out) == (root / "dist" / "out.tar.gz", True)
 
