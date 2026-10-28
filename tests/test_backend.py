@@ -5,11 +5,11 @@ import os
 import subprocess  # ruff:ignore[suspicious-subprocess-import]
 import sys
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 import pytest
 
-from pyproject_api import _backend
+from pyproject_api import SubprocessFrontend, _backend
 from pyproject_api._backend import BackendProxy, read_line, run
 
 if TYPE_CHECKING:
@@ -222,3 +222,14 @@ def test_read_line_eof_at_the_beginning() -> None:
             read_line(fd=r)
     finally:
         os.close(r)
+
+
+def test_backend_output_with_unencodable_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PYTHONIOENCODING", "ascii")  # like a Windows ANSI code page that lacks a path character
+    root: Final[Path] = tmp_path / "pröject"
+    root.mkdir()
+    (root / "build_tester.py").write_text("def build_sdist(sdist_directory, config_settings=None): return 'out.tar.gz'")
+
+    result: Final = SubprocessFrontend(root, (root,), "build_tester", None, ()).build_sdist(root / "dist")
+
+    assert (result.sdist, "pr\\xf6ject" in result.out) == (root / "dist" / "out.tar.gz", True)
