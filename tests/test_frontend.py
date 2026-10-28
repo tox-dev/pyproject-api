@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import pickle  # ruff:ignore[suspicious-pickle-import]
 import re
 import subprocess  # ruff:ignore[suspicious-subprocess-import]
 import sys
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import get_context
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Final, Literal
+from typing import TYPE_CHECKING, Any, Final, Literal
 
 import pytest
 from packaging.requirements import Requirement
@@ -767,3 +770,46 @@ def test_backend_failed_str_repr() -> None:
 
     exc = BackendFailed({"code": 3, "exc_type": "Error", "exc_msg": "msg"}, "out\n", "err\n")
     assert str(exc) == "packaging backend failed (code=3), with Error: msg\nerr\nout"
+
+
+@pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL + 1))
+@pytest.mark.parametrize("result", [{}, {"code": None}, {"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}])
+def test_backend_failed_pickle(protocol: int, result: dict[str, Any]) -> None:
+    exc = BackendFailed(result, "backend stdout", "backend stderr")
+    exc.add_note("building a wheel")
+    restored = pickle.loads(  # ruff:ignore[suspicious-pickle-usage]
+        pickle.dumps(exc, protocol=protocol)
+    )
+
+    assert type(restored) is BackendFailed
+    assert restored.args == exc.args == ()
+    assert restored.__dict__ == exc.__dict__
+    assert str(restored) == str(exc)
+    assert repr(restored) == repr(exc)
+
+
+def _build_wheel_in_process(root: Path) -> str:
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+    return str(frontend.build_wheel(root / "dist").wheel)
+
+
+def test_backend_failed_process_pool(local_builder: Callable[[str], Path]) -> None:
+    root = local_builder("""
+        import sys
+
+        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
+            print("backend stdout")
+            print("backend stderr", file=sys.stderr)
+            raise RuntimeError("build failed")
+        """)
+    with ProcessPoolExecutor(max_workers=1, mp_context=get_context("spawn")) as executor:
+        future = executor.submit(_build_wheel_in_process, root)
+        with pytest.raises(BackendFailed) as context:
+            future.result(timeout=30)
+    exc = context.value
+    assert exc.args == ()
+    assert exc.code == 1
+    assert exc.exc_type == "RuntimeError"
+    assert exc.exc_msg == "build failed"
+    assert "backend stdout" in exc.out
+    assert "backend stderr" in exc.err

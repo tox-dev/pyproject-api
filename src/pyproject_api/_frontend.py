@@ -152,6 +152,10 @@ class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name
         #: the string representation of the exception thrown
         self.exc_msg: str = result.get("exc_msg", "missing Exception message")
 
+    def __reduce__(self) -> tuple[type[BackendFailed], tuple[dict[str, Any], str, str], dict[str, Any]]:
+        result = {"code": self.code, "exc_type": self.exc_type, "exc_msg": self.exc_msg}
+        return self.__class__, (result, self.out, self.err), self.__dict__
+
     def __str__(self) -> str:
         return (
             f"packaging backend failed{'' if self.code is None else f' (code={self.code})'}, "
