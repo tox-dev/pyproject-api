@@ -5,7 +5,7 @@ import sys
 from contextlib import contextmanager
 from subprocess import PIPE, Popen  # ruff:ignore[suspicious-subprocess-import]
 from threading import Thread
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from ._frontend import CmdStatus, Frontend
 
@@ -64,7 +64,7 @@ class SubprocessFrontend(Frontend):
     @contextmanager
     def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Generator[SubprocessCmdStatus, None, None]:  # ruff:ignore[unused-method-argument]
         env = os.environ.copy()
-        backend = os.pathsep.join(str(i) for i in self._backend_paths).strip()
+        backend = os.pathsep.join(str(i) for i in self._backend_paths)
         if backend:
             env["PYTHONPATH"] = backend
         process = Popen(  # ruff:ignore[subprocess-without-shell-equals-true]  # fixed argv, no shell
@@ -77,7 +77,12 @@ class SubprocessFrontend(Frontend):
             cwd=self._root,
             env=env,
         )
-        yield SubprocessCmdStatus(process, f"{os.linesep}{msg}{os.linesep}")
+        status: Final = SubprocessCmdStatus(process, f"{os.linesep}{msg}{os.linesep}")
+        try:
+            yield status
+        finally:
+            process.kill()
+            status.join()
 
     def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
         """

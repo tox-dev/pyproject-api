@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import pickle  # ruff:ignore[suspicious-pickle-import]
 import re
 import subprocess  # ruff:ignore[suspicious-subprocess-import]
 import sys
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import get_context
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Final, Literal
+from typing import TYPE_CHECKING, Any, Final, Literal
 
 import pytest
 from packaging.requirements import Requirement
 
+from pyproject_api import _via_fresh_subprocess
 from pyproject_api._frontend import BackendFailed
 from pyproject_api._via_fresh_subprocess import SubprocessFrontend
 
@@ -51,6 +55,18 @@ def test_relative_project_folder(local_builder: Callable[[str], Path], monkeypat
         """)
     monkeypatch.chdir(root.parent)
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(Path(root.name))[:-1])
+
+    assert frontend.get_requires_for_build_wheel().requires == (Requirement("wheel"),)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows drops trailing spaces from names")
+def test_backend_path_with_trailing_space(tmp_path: Path) -> None:  # pragma: win32 no cover
+    backend: Final = tmp_path / "backend "
+    backend.mkdir()
+    (backend / "build_tester.py").write_text(
+        "def get_requires_for_build_wheel(config_settings=None):\n    return ['wheel']\n"
+    )
+    frontend: Final = SubprocessFrontend(tmp_path, (backend,), "build_tester", None, ())
 
     assert frontend.get_requires_for_build_wheel().requires == (Requirement("wheel"),)
 
@@ -159,6 +175,39 @@ def test_large_command_with_failed_backend(local_builder: Callable[[str], Path])
 
     assert "failed to start backend" in context.value.err
     assert "RuntimeError: backend import failed" in context.value.err
+
+
+@pytest.mark.parametrize(
+    "error_type",
+    [
+        pytest.param(KeyboardInterrupt, id="keyboard-interrupt"),
+        pytest.param(SystemExit, id="system-exit"),
+        pytest.param(RuntimeError, id="runtime-error"),
+    ],
+)
+def test_interrupted_frontend_cleans_up_backend(
+    error_type: type[BaseException], local_builder: Callable[[str], Path], mocker: pytest_mock.MockerFixture
+) -> None:
+    root: Final = local_builder("""
+        import time
+
+        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
+            time.sleep(60)
+            return "demo-1.0-py3-none-any.whl"
+        """)
+    status_factory: Final = mocker.spy(_via_fresh_subprocess, "SubprocessCmdStatus")
+    mocker.patch("pyproject_api._frontend.sleep", side_effect=error_type("build interrupted"))
+
+    try:
+        with pytest.raises(error_type):
+            SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1]).build_wheel(root / "dist")
+
+        assert not status_factory.spy_return.is_alive()
+    finally:
+        # Keep a regression from leaving the backend and its non-daemon thread running.
+        status: Final = status_factory.spy_return
+        status.process.kill()
+        status.join(timeout=10)
 
 
 @pytest.mark.parametrize("cmd", ["build_wheel", "build_sdist"])
@@ -721,3 +770,46 @@ def test_backend_failed_str_repr() -> None:
 
     exc = BackendFailed({"code": 3, "exc_type": "Error", "exc_msg": "msg"}, "out\n", "err\n")
     assert str(exc) == "packaging backend failed (code=3), with Error: msg\nerr\nout"
+
+
+@pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL + 1))
+@pytest.mark.parametrize("result", [{}, {"code": None}, {"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}])
+def test_backend_failed_pickle(protocol: int, result: dict[str, Any]) -> None:
+    exc = BackendFailed(result, "backend stdout", "backend stderr")
+    exc.add_note("building a wheel")
+    restored = pickle.loads(  # ruff:ignore[suspicious-pickle-usage]
+        pickle.dumps(exc, protocol=protocol)
+    )
+
+    assert type(restored) is BackendFailed
+    assert restored.args == exc.args == ()
+    assert restored.__dict__ == exc.__dict__
+    assert str(restored) == str(exc)
+    assert repr(restored) == repr(exc)
+
+
+def _build_wheel_in_process(root: Path) -> str:
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+    return str(frontend.build_wheel(root / "dist").wheel)
+
+
+def test_backend_failed_process_pool(local_builder: Callable[[str], Path]) -> None:
+    root = local_builder("""
+        import sys
+
+        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
+            print("backend stdout")
+            print("backend stderr", file=sys.stderr)
+            raise RuntimeError("build failed")
+        """)
+    with ProcessPoolExecutor(max_workers=1, mp_context=get_context("spawn")) as executor:
+        future = executor.submit(_build_wheel_in_process, root)
+        with pytest.raises(BackendFailed) as context:
+            future.result(timeout=30)
+    exc = context.value
+    assert exc.args == ()
+    assert exc.code == 1
+    assert exc.exc_type == "RuntimeError"
+    assert exc.exc_msg == "build failed"
+    assert "backend stdout" in exc.out
+    assert "backend stderr" in exc.err
