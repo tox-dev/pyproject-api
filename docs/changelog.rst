@@ -5,6 +5,27 @@ Release History
 
 .. towncrier release notes start
 
+.. _release-1-12-2:
+
+v1.12.2 (2026-10-28)
+--------------------
+
+.. _release-1-12-2-fixed:
+
+Fixed
+^^^^^
+
+- Drop the backend proxy stub declarations for its private commands; one named a method the proxy does not have
+  (:pr:`331`) by :user:`tridev-tej` and :user:`gaborbernat`.
+- Keep a trailing space in the last backend path when putting it on ``PYTHONPATH`` (:pr:`329`) by :user:`jdotc1` and
+  :user:`gaborbernat`.
+- Preserve ``BackendFailed`` details when copying or pickling an exception, including when a build runs in a process
+  pool (:pr:`337`) by :user:`jdotc1`.
+- Stop the backend from crashing when it prints a path its standard output encoding cannot represent (:pr:`330`) by
+  :user:`nk-batman21` and :user:`gaborbernat`.
+- Stop the backend process and join its output collection thread when a frontend call is interrupted (:pr:`332`) by
+  :user:`zfz2005` and :user:`gaborbernat`.
+
 .. _release-1-12-1:
 
 v1.12.1 (2026-10-27)
