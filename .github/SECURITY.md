@@ -34,7 +34,11 @@ Classify by who supplies the dangerous input, not by how bad the outcome sounds.
 **In scope**
 
 - A `build-system.backend-path` entry that resolves outside the project being accepted as an import location.
-- A frontend call writing a result or artifact outside the directory the caller named.
+- A frontend call writing a result or artifact outside the directory the caller named, including while extracting
+  `.dist-info` from a built wheel.
+- Clearing a metadata directory deleting the project root, one of its ancestors, or anything reached through a symlink
+  inside it.
+- A hook result naming a path outside its output directory, returned to the caller as the artifact or metadata path.
 - Results of one backend call being read as another call's, for example through a predictable result file.
 
 **Out of scope**
