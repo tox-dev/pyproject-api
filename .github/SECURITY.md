@@ -1,9 +1,51 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+pyproject-api is a Python library that drives a project's PEP 517 build backend from a separate process. This policy
+says how to report a security problem and how we decide whether a report is one.
 
-Only the latest released version is supported with security updates. Older versions will not receive patches.
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+**Do not open a public issue for a security problem.** Use
+[GitHub's private vulnerability reporting](https://github.com/tox-dev/pyproject-api/security/advisories/new). If neither
+works for you, email [gaborjbernat@gmail.com](mailto:gaborjbernat@gmail.com).
 
-Please report security vulnerabilities via [GitHub's private vulnerability reporting](../../security/advisories/new).
+Include what the attacker controls and what they gain, the steps or a proof of concept, and the versions and platform
+you tested. Write the report yourself; unreviewed tool or model output takes longer to triage.
+
+## What to expect
+
+Volunteers maintain pyproject-api, with no on-call rotation. We aim to acknowledge a report within **5 working days**
+and assess it within **15 working days**. Fixes are developed in a private fork attached to the draft advisory, ship in
+a new release, and the advisory, with a CVE requested through GitHub, goes out with that release. The default embargo is
+**90 days** from the report; we agree any change with the reporter. We credit reporters in the advisory under the name
+they choose, or not at all. There is no bug bounty.
+
+## Supported versions
+
+Only the latest release receives fixes. Confirm the problem reproduces on it before reporting.
+
+## Vulnerability or bug
+
+A report is a vulnerability when an attacker who controls only an input that the [threat model](THREAT_MODEL.md) lists
+as untrusted breaks a guarantee pyproject-api makes. A report that first needs control of something the threat model
+trusts, such as the project being built and its build backend, is a bug: we fix it in the open and publish no advisory.
+Classify by who supplies the dangerous input, not by how bad the outcome sounds.
+
+**In scope**
+
+- A `build-system.backend-path` entry that resolves outside the project being accepted as an import location.
+- A frontend call writing a result or artifact outside the directory the caller named, including while extracting
+  `.dist-info` from a built wheel.
+- Clearing a metadata directory deleting the project root, one of its ancestors, or anything reached through a symlink
+  inside it.
+- A hook result naming a path outside its output directory, returned to the caller as the artifact or metadata path.
+- Results of one backend call being read as another call's, for example through a predictable result file.
+
+**Out of scope**
+
+- Code a build backend runs: building a project runs its backend, so building untrusted source runs untrusted code, as
+  PEP 517 intends.
+- What the backend writes into the artifacts it returns.
+- The interpreter, environment and `requires` the caller provisions for the backend.
+
+If you cannot tell which side a finding falls on, report it privately and we will decide.
