@@ -610,6 +610,43 @@ def test_metadata_from_built_wheel(
     assert not err
 
 
+@pytest.mark.parametrize("target", ["wheel", "editable"])
+def test_metadata_from_built_removes_stale_files(
+    demo_pkg_inline: Path, tmp_path: Path, target: Literal["wheel", "editable"]
+) -> None:
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    metadata = tmp_path / "demo_pkg_inline-1.0.0.dist-info"
+    metadata.mkdir()
+    (metadata / "entry_points.txt").write_text("obsolete entry points")
+    (tmp_path / "unrelated.txt").write_text("keep")
+
+    path, _, _ = frontend.metadata_from_built(tmp_path, target)
+
+    assert not (path / "entry_points.txt").exists()
+    assert {p.name for p in path.iterdir()} == {"top_level.txt", "WHEEL", "RECORD", "METADATA"}
+    assert (tmp_path / "unrelated.txt").read_text() == "keep"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Creating symlinks requires privileges")
+def test_metadata_from_built_replaces_directory_symlink(
+    demo_pkg_inline: Path, tmp_path: Path
+) -> None:  # pragma: win32 no cover
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    external = tmp_path / "external"
+    external.mkdir()
+    (external / "keep.txt").write_text("keep")
+    output = tmp_path / "metadata"
+    output.mkdir()
+    (output / "demo_pkg_inline-1.0.0.dist-info").symlink_to(external, target_is_directory=True)
+
+    path, _, _ = frontend.metadata_from_built(output, "wheel")
+
+    assert not path.is_symlink()
+    assert (path / "METADATA").is_file()
+    assert {p.name for p in external.iterdir()} == {"keep.txt"}
+    assert (external / "keep.txt").read_text() == "keep"
+
+
 def test_bad_wheel_metadata_from_built_wheel(local_builder: Callable[[str], Path]) -> None:
     txt = """
     import sys
