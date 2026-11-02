@@ -502,8 +502,8 @@ class Frontend(ABC):
                     if not root.endswith(".dist-info"):
                         continue
                     if basename is None:
-                        destination = metadata_directory / root
-                        if destination.is_symlink():
+                        destination: Final[Path] = metadata_directory / root
+                        if destination.is_symlink():  # pragma: win32 no cover
                             destination.unlink()
                         ensure_empty_dir(destination)
                     basename = root
