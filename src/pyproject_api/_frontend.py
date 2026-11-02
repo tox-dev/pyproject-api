@@ -499,9 +499,15 @@ class Frontend(ABC):
             with ZipFile(str(wheel), "r") as zip_file:
                 for name in zip_file.namelist():  # pragma: no branch
                     root = Path(name).parts[0]
-                    if root.endswith(".dist-info"):
-                        basename = root
-                        zip_file.extract(name, extract_to)
+                    if not root.endswith(".dist-info"):
+                        continue
+                    if basename is None:
+                        destination: Final[Path] = metadata_directory / root
+                        if destination.is_symlink():  # pragma: win32 no cover
+                            destination.unlink()
+                        ensure_empty_dir(destination)
+                    basename = root
+                    zip_file.extract(name, extract_to)
         if basename is None:  # pragma: no branch
             msg = f"no .dist-info found inside generated wheel {wheel}"
             raise RuntimeError(msg)
