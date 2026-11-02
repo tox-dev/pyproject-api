@@ -5,6 +5,19 @@ Release History
 
 .. towncrier release notes start
 
+.. _release-1-12-3:
+
+v1.12.3 (2026-11-02)
+--------------------
+
+.. _release-1-12-3-fixed:
+
+Fixed
+^^^^^
+
+- Clear stale files from reused ``.dist-info`` directories when building wheel or editable metadata (:pr:`345`) by
+  :user:`subotac` and :user:`gaborbernat`.
+
 .. _release-1-12-2:
 
 v1.12.2 (2026-10-28)
