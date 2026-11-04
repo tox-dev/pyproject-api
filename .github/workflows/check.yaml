@@ -7,16 +7,16 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   schedule:
-    - cron: "0 8 * * *"
+    - cron: "43 7 * * *"
 concurrency:
   group: check-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
   test:
     name: 🧪 Test
-    uses: tox-dev/github-workflows/.github/workflows/check.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+    uses: tox-dev/github-workflows/.github/workflows/check.yaml@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
     permissions:
       contents: read
     with:
@@ -40,12 +40,7 @@ jobs:
           {"env": "type", "os": "windows-2025-vs2026"},
           {"env": "dev", "os": "windows-2025-vs2026"},
           {"env": "pkg_meta", "os": "windows-2025-vs2026"},
-          {"env": "3.15", "os": "macos-26"},
-          {"env": "3.15t", "python": "3.15t", "os": "macos-26"},
-          {"env": "3.14", "python": "3.14", "os": "macos-26"},
-          {"env": "3.13", "python": "3.13", "os": "macos-26"},
-          {"env": "3.12", "python": "3.12", "os": "macos-26"},
-          {"env": "3.11", "python": "3.11", "os": "macos-26"}
+          {"env": "3.15", "os": "macos-26"}
         ]
   gate:
     name: 🚦 ${{ github.event_name == 'pull_request' && 'Required checks pass' || 'Non-PR checks pass' }}
@@ -54,6 +49,6 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - name: 🚦 Require all needed jobs to pass
-        uses: tox-dev/github-workflows/required-checks@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+        uses: tox-dev/github-workflows/required-checks@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
         with:
           needs: ${{ toJSON(needs) }}
