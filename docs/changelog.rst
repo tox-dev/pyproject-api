@@ -5,6 +5,11 @@ Release History
 
 .. towncrier release notes start
 
+.. _release-1-12-4:
+
+v1.12.4 (2026-11-04)
+--------------------
+
 .. _release-1-12-3:
 
 v1.12.3 (2026-11-02)
