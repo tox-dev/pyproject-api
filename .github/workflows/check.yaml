@@ -15,62 +15,38 @@ permissions:
   contents: read
 jobs:
   test:
-    name: 🧪 test ${{ matrix.env }} - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        env:
-          - "3.15"
-          - "3.15t"
-          - "3.14"
-          - "3.13"
-          - "3.12"
-          - "3.11"
-          - type
-          - dev
-          - pkg_meta
-        os:
-          - ubuntu-26.04
-          - windows-2025-vs2026
-          - macos-26
-        exclude:
-          - {os: macos-26, env: "type"}
-          - {os: macos-26, env: "dev"}
-          - {os: macos-26, env: "pkg_meta"}
-    steps:
-      - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: 🐍 Install uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          version: latest-known
-          python-version: "3.15"
-          enable-cache: false
-          cache-dependency-glob: "pyproject.toml"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: ⚙️ Add .local/bin to Windows PATH
-        if: runner.os == 'Windows'
-        shell: bash
-        run: echo "$USERPROFILE/.local/bin" >>"$GITHUB_PATH"
-      - name: 📦 Install tox
-        run: uv tool install --python-preference only-managed --python 3.15 tox --with tox-uv
-      - name: 🐍 Install Python
-        if: startsWith(matrix.env, '3.') && matrix.env != '3.15'
-        run: uv python install --python-preference only-managed ${{ matrix.env }}
-      - name: 📦 Set up test suite
-        run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.env }}
-        env:
-          UV_PYTHON_PREFERENCE: only-managed
-      - name: 🧪 Run test suite
-        run: tox run --skip-pkg-install -e ${{ matrix.env }}
-        env:
-          PYTEST_ADDOPTS: "-vv --durations=20"
-          DIFF_AGAINST: HEAD
-          UV_PYTHON_PREFERENCE: only-managed
+    name: 🧪 Test
+    uses: tox-dev/github-workflows/.github/workflows/check.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+    permissions:
+      contents: read
+    with:
+      include: |
+        [
+          {"env": "3.15"},
+          {"env": "3.15t", "python": "3.15t"},
+          {"env": "3.14", "python": "3.14"},
+          {"env": "3.13", "python": "3.13"},
+          {"env": "3.12", "python": "3.12"},
+          {"env": "3.11", "python": "3.11"},
+          {"env": "type"},
+          {"env": "dev"},
+          {"env": "pkg_meta"},
+          {"env": "3.15", "os": "windows-2025-vs2026"},
+          {"env": "3.15t", "python": "3.15t", "os": "windows-2025-vs2026"},
+          {"env": "3.14", "python": "3.14", "os": "windows-2025-vs2026"},
+          {"env": "3.13", "python": "3.13", "os": "windows-2025-vs2026"},
+          {"env": "3.12", "python": "3.12", "os": "windows-2025-vs2026"},
+          {"env": "3.11", "python": "3.11", "os": "windows-2025-vs2026"},
+          {"env": "type", "os": "windows-2025-vs2026"},
+          {"env": "dev", "os": "windows-2025-vs2026"},
+          {"env": "pkg_meta", "os": "windows-2025-vs2026"},
+          {"env": "3.15", "os": "macos-26"},
+          {"env": "3.15t", "python": "3.15t", "os": "macos-26"},
+          {"env": "3.14", "python": "3.14", "os": "macos-26"},
+          {"env": "3.13", "python": "3.13", "os": "macos-26"},
+          {"env": "3.12", "python": "3.12", "os": "macos-26"},
+          {"env": "3.11", "python": "3.11", "os": "macos-26"}
+        ]
   gate:
     name: 🚦 ${{ github.event_name == 'pull_request' && 'Required checks pass' || 'Non-PR checks pass' }}
     if: ${{ !cancelled() }} # codespell:ignore cancelled
@@ -78,6 +54,6 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - name: 🚦 Require all needed jobs to pass
-        env:
-          NEEDS_JSON: ${{ toJSON(needs) }}
-        run: jq -e 'all(to_entries[]; .value.result == "success")' <<<"$NEEDS_JSON"
+        uses: tox-dev/github-workflows/required-checks@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+        with:
+          needs: ${{ toJSON(needs) }}
