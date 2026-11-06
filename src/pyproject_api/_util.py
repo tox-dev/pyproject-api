@@ -12,7 +12,7 @@ def ensure_empty_dir(path: Path) -> None:
         if path.is_dir():
             for sub_path in path.iterdir():
                 if sub_path.is_dir() and not sub_path.is_symlink():
-                    rmtree(sub_path, ignore_errors=True)
+                    rmtree(sub_path)
                 else:
                     sub_path.unlink()
         else:
