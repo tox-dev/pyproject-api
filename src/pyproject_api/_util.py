@@ -8,7 +8,10 @@ if TYPE_CHECKING:
 
 
 def ensure_empty_dir(path: Path) -> None:
-    if path.exists():
+    if path.is_symlink():  # replace the link, never follow it into another tree
+        path.unlink()
+        path.mkdir()
+    elif path.exists():
         if path.is_dir():
             for sub_path in path.iterdir():
                 if sub_path.is_dir() and not sub_path.is_symlink():
