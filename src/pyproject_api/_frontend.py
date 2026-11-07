@@ -28,12 +28,12 @@ class OptionalHooks(TypedDict, total=True):
     """
     A flag indicating if the backend supports the optional hook or not.
 
-    :ivar get_requires_for_build_sdist:
-    :ivar prepare_metadata_for_build_wheel:
-    :ivar get_requires_for_build_wheel:
-    :ivar build_editable:
-    :ivar get_requires_for_build_editable:
-    :ivar prepare_metadata_for_build_editable:
+    :ivar get_requires_for_build_sdist: the backend implements ``get_requires_for_build_sdist``
+    :ivar prepare_metadata_for_build_wheel: the backend implements ``prepare_metadata_for_build_wheel``
+    :ivar get_requires_for_build_wheel: the backend implements ``get_requires_for_build_wheel``
+    :ivar build_editable: the backend implements ``build_editable``
+    :ivar get_requires_for_build_editable: the backend implements ``get_requires_for_build_editable``
+    :ivar prepare_metadata_for_build_editable: the backend implements ``prepare_metadata_for_build_editable``
     """
 
     get_requires_for_build_sdist: bool
@@ -67,16 +67,13 @@ class RequiresBuildSdistResult(NamedTuple):
     """
     Information collected while acquiring the source distribution build dependencies.
 
-    :param requires:
-    :param out:
-    :param err:
+    :param requires: source distribution build dependencies
+    :param out: backend standard output while acquiring the source distribution build dependencies
+    :param err: backend standard error while acquiring the source distribution build dependencies
     """
 
-    #: source distribution build dependencies
     requires: tuple[Requirement, ...]
-    #: backend standard output while acquiring the source distribution build dependencies
     out: str
-    #: backend standard error while acquiring the source distribution build dependencies
     err: str
 
 
@@ -84,16 +81,13 @@ class RequiresBuildWheelResult(NamedTuple):
     """
     Information collected while acquiring the wheel build dependencies.
 
-    :param requires:
-    :param out:
-    :param err:
+    :param requires: wheel build dependencies
+    :param out: backend standard output while acquiring the wheel build dependencies
+    :param err: backend standard error while acquiring the wheel build dependencies
     """
 
-    #: wheel build dependencies
     requires: tuple[Requirement, ...]
-    #: backend standard output while acquiring the wheel build dependencies
     out: str
-    #: backend standard error while acquiring the wheel build dependencies
     err: str
 
 
@@ -101,16 +95,13 @@ class RequiresBuildEditableResult(NamedTuple):
     """
     Information collected while acquiring the editable wheel build dependencies.
 
-    :param requires:
-    :param out:
-    :param err:
+    :param requires: editable wheel build dependencies
+    :param out: backend standard output while acquiring the editable wheel build dependencies
+    :param err: backend standard error while acquiring the editable wheel build dependencies
     """
 
-    #: editable wheel build dependencies
     requires: tuple[Requirement, ...]
-    #: backend standard output while acquiring the editable wheel build dependencies
     out: str
-    #: backend standard error while acquiring the editable wheel build dependencies
     err: str
 
 
@@ -118,16 +109,13 @@ class MetadataForBuildWheelResult(NamedTuple):
     """
     Information collected while acquiring the wheel metadata.
 
-    :param metadata:
-    :param out:
-    :param err:
+    :param metadata: path to the wheel metadata
+    :param out: backend standard output while generating the wheel metadata
+    :param err: backend standard error while generating the wheel metadata
     """
 
-    #: path to the wheel metadata
     metadata: Path
-    #: backend standard output while generating the wheel metadata
     out: str
-    #: backend standard error while generating the wheel metadata
     err: str
 
 
@@ -135,16 +123,13 @@ class MetadataForBuildEditableResult(NamedTuple):
     """
     Information collected while acquiring the editable metadata.
 
-    :param metadata:
-    :param out:
-    :param err:
+    :param metadata: path to the wheel metadata
+    :param out: backend standard output while generating the editable wheel metadata
+    :param err: backend standard error while generating the editable wheel metadata
     """
 
-    #: path to the wheel metadata
     metadata: Path
-    #: backend standard output while generating the editable wheel metadata
     out: str
-    #: backend standard error while generating the editable wheel metadata
     err: str
 
 
@@ -152,16 +137,13 @@ class SdistResult(NamedTuple):
     """
     Information collected while building a source distribution.
 
-    :param sdist:
-    :param out:
-    :param err:
+    :param sdist: path to the built source distribution
+    :param out: backend standard output while building the source distribution
+    :param err: backend standard error while building the source distribution
     """
 
-    #: path to the built source distribution
     sdist: Path
-    #: backend standard output while building the source distribution
     out: str
-    #: backend standard error while building the source distribution
     err: str
 
 
@@ -169,16 +151,13 @@ class WheelResult(NamedTuple):
     """
     Information collected while building a wheel.
 
-    :param wheel:
-    :param out:
-    :param err:
+    :param wheel: path to the built wheel artifact
+    :param out: backend standard output while building the wheel
+    :param err: backend standard error while building the wheel
     """
 
-    #: path to the built wheel artifact
     wheel: Path
-    #: backend standard output while building the wheel
     out: str
-    #: backend standard error while building the wheel
     err: str
 
 
@@ -186,16 +165,13 @@ class EditableResult(NamedTuple):
     """
     Information collected while building an editable wheel.
 
-    :param wheel:
-    :param out:
-    :param err:
+    :param wheel: path to the built wheel artifact
+    :param out: backend standard output while building the wheel
+    :param err: backend standard error while building the wheel
     """
 
-    #: path to the built wheel artifact
     wheel: Path
-    #: backend standard output while building the wheel
     out: str
-    #: backend standard error while building the wheel
     err: str
 
 
@@ -203,9 +179,9 @@ class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name
     """
     An error of the build backend.
 
-    :param result:
-    :param out:
-    :param err:
+    :param result: the backend response, with the ``code``, ``exc_type`` and ``exc_msg`` keys
+    :param out: standard output collected while running the command
+    :param err: standard error collected while running the command
     """
 
     def __init__(self, result: dict[str, Any], out: str, err: str) -> None:

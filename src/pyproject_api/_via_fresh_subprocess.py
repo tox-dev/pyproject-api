@@ -42,7 +42,7 @@ class SubprocessFrontend(Frontend):
     """
     A frontend that creates fresh subprocess at every call to communicate with the backend.
 
-    :ivar executable:
+    :ivar executable: the interpreter that runs the backend in a subprocess
     """
 
     def __init__(
