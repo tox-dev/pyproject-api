@@ -4,7 +4,9 @@ API
 
 .. currentmodule:: pyproject_api
 
-.. autodata:: __version__
+.. data:: __version__
+
+   The semantic version of the project.
 
 Frontend
 --------
