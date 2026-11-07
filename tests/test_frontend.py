@@ -8,7 +8,7 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import get_context
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, Final, Literal
+from typing import TYPE_CHECKING, Final, Literal
 
 import pytest
 from packaging.requirements import Requirement
@@ -208,7 +208,7 @@ def test_interrupted_frontend_cleans_up_backend(
         status.join(timeout=10)
 
 
-@pytest.mark.parametrize("cmd", ["build_wheel", "build_sdist"])
+@pytest.mark.parametrize("cmd", ["build_wheel", "build_sdist"], ids=["wheel", "sdist"])
 def test_missing_required_cmd(cmd: str, local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("")
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
@@ -318,7 +318,7 @@ def test_prepare_metadata_from_caller_directory(
     assert (result.metadata / "METADATA").read_text() == "Name: demo\nVersion: 1.0\n"
 
 
-@pytest.mark.parametrize("target", ["wheel", "editable"])
+@pytest.mark.parametrize("target", ["wheel", "editable"], ids=["wheel", "editable"])
 def test_build_with_relative_metadata_directory(
     target: str,
     tmp_path: Path,
@@ -444,14 +444,14 @@ def test_backend_obj(tmp_path: Path, backend_obj: str) -> None:
     assert result.requires == (Requirement("a"),)
 
 
-@pytest.mark.parametrize("of_type", ["wheel", "sdist"])
+@pytest.mark.parametrize("of_type", ["wheel", "sdist"], ids=["wheel", "sdist"])
 def test_get_requires_for_build_missing(of_type: str, local_builder: Callable[[str], Path]) -> None:
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(local_builder(""))[:-1])
     result = getattr(frontend, f"get_requires_for_build_{of_type}")()
     assert result.requires == ()
 
 
-@pytest.mark.parametrize("of_type", ["sdist", "wheel"])
+@pytest.mark.parametrize("of_type", ["sdist", "wheel"], ids=["sdist", "wheel"])
 def test_bad_return_type_get_requires_for_build(of_type: str, local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder(f"def get_requires_for_build_{of_type}(config_settings=None): return 1")
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
@@ -568,7 +568,11 @@ def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, 
     assert unrelated.read_text() == "keep me"
 
 
-@pytest.mark.parametrize("hook", ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"])
+@pytest.mark.parametrize(
+    "hook",
+    ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"],
+    ids=["wheel", "editable"],
+)
 def test_prepare_metadata_allows_sibling_directory(tmp_path: Path, hook: str) -> None:
     root: Final[Path] = tmp_path / "project"
     root.mkdir()
@@ -621,7 +625,7 @@ def test_no_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str]
         frontend.metadata_from_built(tmp_path, "wheel")
 
 
-@pytest.mark.parametrize("target", ["wheel", "editable"])
+@pytest.mark.parametrize("target", ["wheel", "editable"], ids=["wheel", "editable"])
 def test_metadata_from_built_wheel(
     demo_pkg_inline: Path,
     tmp_path: Path,
@@ -837,8 +841,12 @@ def test_backend_failed_str_repr() -> None:
 
 
 @pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL + 1))
-@pytest.mark.parametrize("result", [{}, {"code": None}, {"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}])
-def test_backend_failed_pickle(protocol: int, result: dict[str, Any]) -> None:
+@pytest.mark.parametrize(
+    "result",
+    [{}, {"code": None}, {"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}],
+    ids=["empty", "no-code", "typed"],
+)
+def test_backend_failed_pickle(protocol: int, result: dict[str, int | str | None]) -> None:
     exc = BackendFailed(result, "backend stdout", "backend stderr")
     exc.add_note("building a wheel")
     restored = pickle.loads(  # ruff:ignore[suspicious-pickle-usage]  # round-trips the exception through pickle

@@ -47,48 +47,15 @@ def test_cli_build_relative_to_caller(
 @pytest.mark.parametrize(
     ("cli_args", "srcdir", "outdir", "hooks"),
     [
-        (
-            [],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_sdist", "build_wheel"],
+        pytest.param([], Path.cwd(), Path.cwd() / "dist", ["build_sdist", "build_wheel"], id="default"),
+        pytest.param(
+            ["src"], Path("src"), Path("src").absolute() / "dist", ["build_sdist", "build_wheel"], id="srcdir"
         ),
-        (
-            ["src"],
-            Path("src"),
-            Path("src").absolute() / "dist",
-            ["build_sdist", "build_wheel"],
-        ),
-        (
-            ["-o", "out"],
-            Path.cwd(),
-            Path("out").absolute(),
-            ["build_sdist", "build_wheel"],
-        ),
-        (
-            ["-s"],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_sdist"],
-        ),
-        (
-            ["-w"],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_wheel"],
-        ),
-        (
-            ["-e"],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_editable"],
-        ),
-        (
-            ["-s", "-w"],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_sdist", "build_wheel"],
-        ),
+        pytest.param(["-o", "out"], Path.cwd(), Path("out").absolute(), ["build_sdist", "build_wheel"], id="outdir"),
+        pytest.param(["-s"], Path.cwd(), Path.cwd() / "dist", ["build_sdist"], id="sdist"),
+        pytest.param(["-w"], Path.cwd(), Path.cwd() / "dist", ["build_wheel"], id="wheel"),
+        pytest.param(["-e"], Path.cwd(), Path.cwd() / "dist", ["build_editable"], id="editable"),
+        pytest.param(["-s", "-w"], Path.cwd(), Path.cwd() / "dist", ["build_sdist", "build_wheel"], id="sdist-wheel"),
     ],
 )
 def test_parse_args(
