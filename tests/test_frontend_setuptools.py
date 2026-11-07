@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from contextlib import contextmanager
 from stat import S_IWGRP, S_IWOTH, S_IWUSR
 from typing import TYPE_CHECKING, NamedTuple
@@ -72,7 +71,7 @@ def test_setuptools_prepare_metadata_for_build_wheel(frontend_setuptools: Subpro
     assert dist.version == "1.0"
     assert dist.metadata["Name"] == "demo"
     values = dist.metadata.get_all("Requires-Dist") or []
-    expected = ["magic>3", "requests>2"] if sys.version_info[0:2] > (3, 8) else ["magic >3", "requests >2"]
+    expected = ["magic>3", "requests>2"]
     assert sorted(values) == expected
     assert isinstance(result.out, str)
     assert isinstance(result.err, str)
