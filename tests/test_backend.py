@@ -166,7 +166,7 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, failure
     ]
     completed = subprocess.run(
         [sys.executable, _backend.__file__, "True", "exit_backend"],
-        input="\n".join(messages) + "\n",
+        input="".join(f"{message}\n" for message in messages),
         capture_output=True,
         text=True,
         cwd=tmp_path,
@@ -193,35 +193,35 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, failure
 
 
 def test_read_line_success() -> None:
-    r, w = os.pipe()
+    read_fd, write_fd = os.pipe()
     try:
-        os.write(w, b"this is a line\r\n")
-        line_out = read_line(fd=r)
+        os.write(write_fd, b"this is a line\r\n")
+        line_out = read_line(fd=read_fd)
         assert line_out == bytearray(b"this is a line")
     finally:
-        os.close(r)
-        os.close(w)
+        os.close(read_fd)
+        os.close(write_fd)
 
 
 def test_read_line_eof_before_newline() -> None:
-    r, w = os.pipe()
+    read_fd, write_fd = os.pipe()
     try:
-        os.write(w, b"this is a line")
-        os.close(w)
-        line_out = read_line(fd=r)
+        os.write(write_fd, b"this is a line")
+        os.close(write_fd)
+        line_out = read_line(fd=read_fd)
         assert line_out == bytearray(b"this is a line")
     finally:
-        os.close(r)
+        os.close(read_fd)
 
 
 def test_read_line_eof_at_the_beginning() -> None:
-    r, w = os.pipe()
+    read_fd, write_fd = os.pipe()
     try:
-        os.close(w)
+        os.close(write_fd)
         with pytest.raises(EOFError):
-            read_line(fd=r)
+            read_line(fd=read_fd)
     finally:
-        os.close(r)
+        os.close(read_fd)
 
 
 def test_backend_output_with_unencodable_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
