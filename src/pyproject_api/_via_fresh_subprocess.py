@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
     from packaging.requirements import Requirement
 
+    from ._frontend import JsonValue
+
 
 class SubprocessCmdStatus(CmdStatus, Thread):
     def __init__(self, process: Popen[str], msg: str | None = None) -> None:
@@ -87,7 +89,7 @@ class SubprocessFrontend(Frontend):
             process.kill()
             status.join()
 
-    def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
+    def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[JsonValue, str, str]:
         """
         Send a command to the backend.
 

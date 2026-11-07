@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import sleep
-from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, NoReturn, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, NoReturn, TypeAlias, TypedDict, cast
 from zipfile import ZipFile
 
 from packaging.requirements import Requirement
@@ -22,6 +22,8 @@ if TYPE_CHECKING:
 
 _HERE: Final[Path] = Path(__file__).parent
 ConfigSettings = dict[str, Any] | None
+# the backend answers over a JSON protocol, so every value it returns is one of these
+JsonValue: TypeAlias = str | int | float | bool | list["JsonValue"] | dict[str, "JsonValue"] | None
 
 
 class OptionalHooks(TypedDict, total=True):
@@ -197,8 +199,8 @@ class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name
         #: the string representation of the exception thrown
         self.exc_msg: str = result.get("exc_msg", "missing Exception message")
 
-    def __reduce__(self) -> tuple[type[BackendFailed], tuple[dict[str, Any], str, str], dict[str, Any]]:
-        result = {"code": self.code, "exc_type": self.exc_type, "exc_msg": self.exc_msg}
+    def __reduce__(self) -> tuple[type[BackendFailed], tuple[dict[str, JsonValue], str, str], dict[str, Any]]:
+        result: dict[str, JsonValue] = {"code": self.code, "exc_type": self.exc_type, "exc_msg": self.exc_msg}
         return self.__class__, (result, self.out, self.err), self.__dict__
 
     def __str__(self) -> str:
@@ -216,7 +218,7 @@ class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name
 
 
 class _SendResult(NamedTuple):
-    value: Any
+    value: JsonValue
     out: str
     err: str
 
@@ -335,7 +337,7 @@ class Frontend(ABC):
         """A dictionary indicating if the optional hook is supported or not."""
         if self._optional_hooks is None:
             result, _, __ = self._send("_optional_hooks")
-            self._optional_hooks = result
+            self._optional_hooks = cast("OptionalHooks", result)
         return self._optional_hooks
 
     def _send(self, cmd: str, **kwargs: Any) -> _SendResult:
@@ -376,7 +378,7 @@ class Frontend(ABC):
     def _unexpected_response(
         self,
         cmd: str,
-        got: Any,
+        got: JsonValue,
         expected_type: str | type[str],
         out: str,
         err: str,
@@ -435,7 +437,7 @@ class Frontend(ABC):
         :returns: metadata generation result
         """
         self._check_metadata_dir(metadata_directory)
-        basename: str | None = None
+        basename: JsonValue = None
         if self.optional_hooks["prepare_metadata_for_build_wheel"]:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_wheel",
@@ -476,7 +478,7 @@ class Frontend(ABC):
         :returns: metadata generation result
         """
         self._check_metadata_dir(metadata_directory)
-        basename: str | None = None
+        basename: JsonValue = None
         if self.optional_hooks["prepare_metadata_for_build_editable"]:
             basename, out, err = self._send(
                 cmd="prepare_metadata_for_build_editable",
@@ -628,6 +630,7 @@ __all__ = [
     "ConfigSettings",
     "EditableResult",
     "Frontend",
+    "JsonValue",
     "MetadataForBuildEditableResult",
     "MetadataForBuildWheelResult",
     "OptionalHooks",

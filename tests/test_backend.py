@@ -5,7 +5,7 @@ import os
 import subprocess  # ruff:ignore[suspicious-subprocess-import]  # runs the backend as a child process
 import sys
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Final
 
 import pytest
 
@@ -16,6 +16,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pytest_mock
+
+    from pyproject_api._frontend import JsonValue
 
 
 def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
@@ -102,7 +104,7 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
         json.dumps({"cmd": "_exit", "kwargs": {}, "result": results[3]}),
     ]
 
-    def fake_backend(name: str, *args: Any, **kwargs: Any) -> Any:  # ruff:ignore[unused-function-argument]  # the fake backend accepts any call
+    def fake_backend(name: str, *args: JsonValue, **kwargs: JsonValue) -> JsonValue:  # ruff:ignore[unused-function-argument]  # the fake backend accepts any call
         if name == "dummy_command_b":
             raise SystemExit(2)
 
