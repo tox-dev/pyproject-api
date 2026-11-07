@@ -593,8 +593,8 @@ class Frontend(ABC):
         :param metadata_directory: directory where to put the metadata
         :param target: the type of wheel metadata to build
         :param config_settings: config settings to pass in to the build endpoint
-        :returns:
-        :raises RuntimeError:
+        :returns: the metadata directory path, with the standard output and standard error text of the build
+        :raises RuntimeError: if the built wheel is missing or holds no ``.dist-info`` directory
         """
         hook = getattr(self, f"build_{target}")
         with self._wheel_directory() as wheel_directory:
