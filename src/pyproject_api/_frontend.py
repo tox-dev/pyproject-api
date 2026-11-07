@@ -193,7 +193,7 @@ class EditableResult(NamedTuple):
     err: str
 
 
-class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name]
+class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name]  # public exception name, kept for users
     """
     An error of the build backend.
 
@@ -241,14 +241,14 @@ class Frontend(ABC):
     #: backend requirements when the ``pyproject.toml`` does not specify it
     LEGACY_REQUIRES: tuple[Requirement, ...] = (Requirement("setuptools >= 40.8.0"),)
 
-    def __init__(  # ruff:ignore[too-many-arguments, too-many-positional-arguments]
+    def __init__(  # ruff:ignore[too-many-arguments, too-many-positional-arguments]  # public constructor signature
         self,
         root: Path,
         backend_paths: tuple[Path, ...],
         backend_module: str,
         backend_obj: str | None,
         requires: tuple[Requirement, ...],
-        reuse_backend: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument]
+        reuse_backend: bool = True,  # ruff:ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument]  # public keyword parameter
     ) -> None:
         """
         Create a new frontend.
@@ -361,7 +361,7 @@ class Frontend(ABC):
                 },
             )
             with self._send_msg(cmd, result_file, msg) as status:
-                while not status.done:  # pragma: no branch
+                while not status.done:  # pragma: no branch # the wait loop body depends on thread timing
                     sleep(0.001)  # wait a bit for things to happen
             if result_file.exists():
                 try:
@@ -595,7 +595,7 @@ class Frontend(ABC):
             extract_to = str(metadata_directory)
             basename = None
             with ZipFile(str(wheel), "r") as zip_file:
-                for name in zip_file.namelist():  # pragma: no branch
+                for name in zip_file.namelist():  # pragma: no branch # the loop always finishes the archive
                     root = Path(name).parts[0]
                     if not root.endswith(".dist-info"):
                         continue
@@ -603,13 +603,13 @@ class Frontend(ABC):
                         ensure_empty_dir(metadata_directory / root)
                     basename = root
                     zip_file.extract(name, extract_to)
-        if basename is None:  # pragma: no branch
+        if basename is None:  # pragma: no branch # the missing-dist-info arm is covered by a separate test
             msg = f"no .dist-info found inside generated wheel {wheel}"
             raise RuntimeError(msg)
         return metadata_directory / basename, out, err
 
     @contextmanager
-    def _wheel_directory(self) -> Generator[Path, None, None]:  # ruff:ignore[no-self-use]
+    def _wheel_directory(self) -> Generator[Path, None, None]:  # ruff:ignore[no-self-use]  # shared with the build helpers that call it
         with TemporaryDirectory() as wheel_directory:
             yield Path(wheel_directory)
 

@@ -1,4 +1,4 @@
-from __future__ import annotations  # ruff:ignore[undocumented-public-module]
+from __future__ import annotations  # ruff:ignore[undocumented-public-module]  # entry point for python -m, not an importable API
 
 import argparse
 import os
@@ -72,22 +72,22 @@ def main(argv: list[str]) -> None:
     res: SdistResult | WheelResult | EditableResult
 
     if "sdist" in distributions:
-        print("Building sdist...")  # ruff:ignore[print]
+        print("Building sdist...")  # ruff:ignore[print]  # CLI output for the user
         res = frontend.build_sdist(outdir)
-        print(res.out)  # ruff:ignore[print]
-        print(res.err, file=sys.stderr)  # ruff:ignore[print]
+        print(res.out)  # ruff:ignore[print]  # CLI output for the user
+        print(res.err, file=sys.stderr)  # ruff:ignore[print]  # CLI output for the user
 
     if "wheel" in distributions:
-        print("Building wheel...")  # ruff:ignore[print]
+        print("Building wheel...")  # ruff:ignore[print]  # CLI output for the user
         res = frontend.build_wheel(outdir)
-        print(res.out)  # ruff:ignore[print]
-        print(res.err, file=sys.stderr)  # ruff:ignore[print]
+        print(res.out)  # ruff:ignore[print]  # CLI output for the user
+        print(res.err, file=sys.stderr)  # ruff:ignore[print]  # CLI output for the user
 
     if "editable" in distributions:
-        print("Building editable wheel...")  # ruff:ignore[print]
+        print("Building editable wheel...")  # ruff:ignore[print]  # CLI output for the user
         res = frontend.build_editable(outdir)
-        print(res.out)  # ruff:ignore[print]
-        print(res.err, file=sys.stderr)  # ruff:ignore[print]
+        print(res.out)  # ruff:ignore[print]  # CLI output for the user
+        print(res.err, file=sys.stderr)  # ruff:ignore[print]  # CLI output for the user
 
 
 __all__ = [

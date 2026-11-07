@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from contextlib import contextmanager
-from subprocess import PIPE, Popen  # ruff:ignore[suspicious-subprocess-import]
+from subprocess import PIPE, Popen  # ruff:ignore[suspicious-subprocess-import]  # the backend is spawned with a fixed argv, no shell
 from threading import Thread
 from typing import TYPE_CHECKING, Any, Final, cast
 
@@ -66,7 +66,7 @@ class SubprocessFrontend(Frontend):
         self.executable = sys.executable
 
     @contextmanager
-    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Generator[SubprocessCmdStatus, None, None]:  # ruff:ignore[unused-method-argument]
+    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Generator[SubprocessCmdStatus, None, None]:  # ruff:ignore[unused-method-argument]  # mirrors the Frontend._send_msg signature
         env = os.environ.copy()
         if backend := os.pathsep.join(str(i) for i in self._backend_paths):
             env["PYTHONPATH"] = backend

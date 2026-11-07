@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import pickle  # ruff:ignore[suspicious-pickle-import]
+import pickle  # ruff:ignore[suspicious-pickle-import]  # tests that the exception survives pickling
 import re
-import subprocess  # ruff:ignore[suspicious-subprocess-import]
+import subprocess  # ruff:ignore[suspicious-subprocess-import]  # runs the frontend in a child process
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import get_context
@@ -829,7 +829,7 @@ def test_backend_failed_str_repr() -> None:
 def test_backend_failed_pickle(protocol: int, result: dict[str, Any]) -> None:
     exc = BackendFailed(result, "backend stdout", "backend stderr")
     exc.add_note("building a wheel")
-    restored = pickle.loads(  # ruff:ignore[suspicious-pickle-usage]
+    restored = pickle.loads(  # ruff:ignore[suspicious-pickle-usage]  # round-trips the exception through pickle
         pickle.dumps(exc, protocol=protocol)
     )
 

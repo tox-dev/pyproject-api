@@ -51,11 +51,11 @@ metadata = {
 }
 
 
-def get_requires_for_build_wheel(config_settings: dict[str, str] | None = None) -> list[str]:  # ruff:ignore[unused-function-argument]
+def get_requires_for_build_wheel(config_settings: dict[str, str] | None = None) -> list[str]:  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
     return []  # pragma: no cover # only executed in non-host pythons
 
 
-def build_sdist(sdist_directory: str, config_settings: dict[str, str] | None = None) -> str:  # ruff:ignore[unused-function-argument]
+def build_sdist(sdist_directory: str, config_settings: dict[str, str] | None = None) -> str:  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
     result = f"{name}-{version}.tar.gz"
     with tarfile.open(str(Path(sdist_directory) / result), "w:gz") as tar:
         root = Path(__file__).parent
@@ -64,27 +64,27 @@ def build_sdist(sdist_directory: str, config_settings: dict[str, str] | None = N
     return result
 
 
-def get_requires_for_build_sdist(config_settings: dict[str, str] | None = None) -> list[str]:  # ruff:ignore[unused-function-argument]
+def get_requires_for_build_sdist(config_settings: dict[str, str] | None = None) -> list[str]:  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
     return []  # pragma: no cover # only executed in non-host pythons
 
 
 if "HAS_REQUIRES_EDITABLE" in os.environ:
 
-    def get_requires_for_build_editable(config_settings: dict[str, str] | None = None) -> list[str]:  # ruff:ignore[unused-function-argument]
-        return [1] if "REQUIRES_EDITABLE_BAD_RETURN" in os.environ else ["editables"]  # type: ignore[invalid-return-type]
+    def get_requires_for_build_editable(config_settings: dict[str, str] | None = None) -> list[str]:  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
+        return [1] if "REQUIRES_EDITABLE_BAD_RETURN" in os.environ else ["editables"]  # type: ignore[invalid-return-type]  # returns a bad type on purpose for the test
 
 
 if "HAS_PREPARE_EDITABLE" in os.environ:
 
     def prepare_metadata_for_build_editable(
         metadata_directory: str,
-        config_settings: dict[str, str] | None = None,  # ruff:ignore[unused-function-argument]
+        config_settings: dict[str, str] | None = None,  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
     ) -> str:
         dest = Path(metadata_directory) / _DIST_INFO
         dest.mkdir(parents=True)
         for arc_name, data in metadata.items():
             (dest.parent / arc_name).write_text(dedent(data).strip())
-        print(f"created metadata {dest}")  # ruff:ignore[print]
+        print(f"created metadata {dest}")  # ruff:ignore[print]  # the test backend reports its progress on stdout
         if "PREPARE_EDITABLE_BAD" in os.environ:
             return 1  # type: ignore[invalid-return-type] # checking bad type on purpose
         return _DIST_INFO
@@ -103,7 +103,7 @@ def build_editable(
 def build_wheel(
     wheel_directory: str,
     metadata_directory: str | None,
-    config_settings: dict[str, str] | None,  # ruff:ignore[unused-function-argument]
+    config_settings: dict[str, str] | None,  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
 ) -> str:
     base_name = f"{name}-{version}-py{sys.version_info[0]}-none-any.whl"
     path = Path(wheel_directory) / base_name
@@ -120,5 +120,5 @@ def build_wheel(
         else:
             for arc_name, data in metadata.items():
                 zip_file_handler.writestr(arc_name, dedent(data).strip())
-    print(f"created wheel {path}")  # ruff:ignore[print]
+    print(f"created wheel {path}")  # ruff:ignore[print]  # the test backend reports its progress on stdout
     return base_name

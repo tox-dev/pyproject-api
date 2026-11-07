@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess  # ruff:ignore[suspicious-subprocess-import]
+import subprocess  # ruff:ignore[suspicious-subprocess-import]  # runs the backend as a child process
 import sys
 from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Final
@@ -102,7 +102,7 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
         json.dumps({"cmd": "_exit", "kwargs": {}, "result": results[3]}),
     ]
 
-    def fake_backend(name: str, *args: Any, **kwargs: Any) -> Any:  # ruff:ignore[unused-function-argument]
+    def fake_backend(name: str, *args: Any, **kwargs: Any) -> Any:  # ruff:ignore[unused-function-argument]  # the fake backend accepts any call
         if name == "dummy_command_b":
             raise SystemExit(2)
 

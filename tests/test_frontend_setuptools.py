@@ -131,7 +131,7 @@ def test_setuptools_exception(frontend_setuptools: SubprocessFrontend) -> None:
 
 
 def test_bad_message(frontend_setuptools: SubprocessFrontend, tmp_path: Path) -> None:
-    with frontend_setuptools._send_msg("bad_cmd", tmp_path / "a", "{{") as status:  # ruff:ignore[private-member-access]
+    with frontend_setuptools._send_msg("bad_cmd", tmp_path / "a", "{{") as status:  # ruff:ignore[private-member-access]  # tests the error path of the private sender
         status.join()
     out, err = status.out_err()
     assert out

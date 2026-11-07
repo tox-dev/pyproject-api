@@ -1,4 +1,4 @@
-# ruff:ignore[undocumented-public-module]
+# ruff:ignore[undocumented-public-module]  # Sphinx executes this file as configuration, nothing imports it
 from __future__ import annotations
 
 import os
@@ -62,12 +62,12 @@ nitpick_ignore = []
 
 def setup(app: Sphinx) -> None:
     class PatchedPythonDomain(PythonDomain):
-        def resolve_xref(  # ruff:ignore[too-many-arguments, too-many-positional-arguments]
+        def resolve_xref(  # ruff:ignore[too-many-arguments, too-many-positional-arguments]  # the signature is Sphinx's resolve_xref override
             self,
             env: BuildEnvironment,
             fromdocname: str,
             builder: Builder,
-            type: str,  # ruff:ignore[builtin-argument-shadowing]
+            type: str,  # ruff:ignore[builtin-argument-shadowing]  # the name is fixed by Sphinx's resolve_xref signature
             target: str,
             node: pending_xref,
             contnode: Element,
