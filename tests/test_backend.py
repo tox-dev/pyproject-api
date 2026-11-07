@@ -128,9 +128,17 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
     assert "SystemExit: 2" in captured.err
 
 
-@pytest.mark.parametrize("code", ["Path('failure.txt')", "b'failure'"])
-@pytest.mark.parametrize("previous_success", [False, True])
-def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previous_success: bool) -> None:
+@pytest.mark.parametrize(
+    "code", [pytest.param("Path('failure.txt')", id="path"), pytest.param("b'failure'", id="bytes")]
+)
+@pytest.mark.parametrize(
+    "failures",
+    [
+        pytest.param([True, False], id="fails-first"),
+        pytest.param([False, True, False], id="succeeds-first"),
+    ],
+)
+def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, failures: list[bool]) -> None:
     (tmp_path / "exit_backend.py").write_text(
         dedent(f"""
         import os
@@ -147,7 +155,6 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previou
             return "demo-{{}}.whl".format(calls)
         """)
     )
-    failures = [False, True, False] if previous_success else [True, False]
     requests = [
         {"cmd": "build_wheel", "kwargs": {"wheel_directory": str(tmp_path), "config_settings": {"fail": fail}}}
         for fail in failures
@@ -173,9 +180,10 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previou
     assert "return" not in failed
     assert failed == {"code": 1, "exc_type": "RuntimeError", "exc_msg": "Failed to serialize backend exception"}
     assert completed.returncode == 0, completed.stderr
-    for index, fail in enumerate(failures):
-        if not fail:
-            assert json.loads(result_files[index].read_text()) == {"return": f"demo-{index + 1}.whl"}
+    successes = [index for index, fail in enumerate(failures) if not fail]
+    assert {index: json.loads(result_files[index].read_text()) for index in successes} == {
+        index: {"return": f"demo-{index + 1}.whl"} for index in successes
+    }
     assert json.loads(result_files[-1].read_text()) == {"return": 0}
     hook_lines = [line for line in completed.stdout.splitlines() if line.startswith("hook pid=")]
     assert len(hook_lines) == len(failures)

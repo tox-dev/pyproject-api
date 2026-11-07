@@ -269,27 +269,44 @@ def demo_pkg_inline() -> Path:
     return Path(__file__).absolute().parent / "demo_pkg_inline"
 
 
-@pytest.mark.parametrize("target", ["sdist", "wheel", "editable"])
-@pytest.mark.parametrize("relative", [True, False], ids=["relative", "absolute"])
+@pytest.mark.parametrize(
+    ("target", "attribute"),
+    [("sdist", "sdist"), ("wheel", "wheel"), ("editable", "wheel")],
+    ids=["sdist", "wheel", "editable"],
+)
+@pytest.mark.parametrize(
+    "directory_for",
+    [lambda _: Path("artifacts"), lambda tmp_path: tmp_path / "artifacts"],
+    ids=["relative", "absolute"],
+)
 def test_build_output_from_caller_directory(
-    target: str, relative: bool, tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch
+    target: str,
+    attribute: str,
+    directory_for: Callable[[Path], Path],
+    tmp_path: Path,
+    demo_pkg_inline: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(tmp_path)
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    directory = Path("artifacts") if relative else tmp_path / "artifacts"
+    directory = directory_for(tmp_path)
 
-    artifact = getattr(getattr(frontend, f"build_{target}")(directory), "sdist" if target == "sdist" else "wheel")
+    artifact = getattr(getattr(frontend, f"build_{target}")(directory), attribute)
 
     assert artifact.parent == directory
     assert artifact.is_file()
     assert artifact.absolute().parent == tmp_path / "artifacts"
 
 
-@pytest.mark.parametrize("target", ["wheel", "editable"])
-@pytest.mark.parametrize("relative", [True, False], ids=["relative", "absolute"])
+@pytest.mark.parametrize("target", ["wheel", "editable"], ids=["wheel", "editable"])
+@pytest.mark.parametrize(
+    "directory_for",
+    [lambda _: Path("metadata"), lambda caller: caller / "metadata"],
+    ids=["relative", "absolute"],
+)
 def test_prepare_metadata_from_caller_directory(
     target: str,
-    relative: bool,
+    directory_for: Callable[[Path], Path],
     tmp_path: Path,
     local_builder: Callable[[str], Path],
     monkeypatch: pytest.MonkeyPatch,
@@ -309,7 +326,7 @@ def test_prepare_metadata_from_caller_directory(
     caller.mkdir()
     monkeypatch.chdir(caller)
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
-    directory = Path("metadata") if relative else caller / "metadata"
+    directory = directory_for(caller)
 
     result = getattr(frontend, f"prepare_metadata_for_build_{target}")(directory)
 
@@ -545,9 +562,13 @@ def test_prepare_metadata_for_build_wheel_meta_is_root(local_builder: Callable[[
     assert str(context.value) == f"the project root and the metadata directory can't be the same {tmp_path}"
 
 
-@pytest.mark.parametrize("hook", ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"])
-@pytest.mark.parametrize("alias", [False, True], ids=["directory", "symlink"])
-def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, alias: bool) -> None:
+@pytest.mark.parametrize(
+    "hook",
+    ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"],
+    ids=["wheel", "editable"],
+)
+@pytest.mark.parametrize("metadata_name", ["sandbox", "alias"], ids=["directory", "symlink"])
+def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, metadata_name: str) -> None:
     # The old cleanup can remove the whole ancestor, so keep it inside tmp_path.
     ancestor: Final[Path] = tmp_path / "sandbox"
     root: Final[Path] = ancestor / "project"
@@ -556,9 +577,8 @@ def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, 
     source.write_text("source content\n")
     unrelated: Final[Path] = ancestor / "unrelated.txt"
     unrelated.write_text("keep me")
-    metadata_directory: Final[Path] = tmp_path / "alias" if alias else ancestor
-    if alias:
-        metadata_directory.symlink_to(ancestor, target_is_directory=True)
+    (tmp_path / "alias").symlink_to(ancestor, target_is_directory=True)
+    metadata_directory: Final[Path] = tmp_path / metadata_name
     frontend: Final[SubprocessFrontend] = SubprocessFrontend(root, (root,), "build_tester", None, ())
 
     with pytest.raises(RuntimeError, match="the metadata directory can't contain the project root"):

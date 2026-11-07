@@ -88,21 +88,16 @@ def test_parse_args(
 
     subprocess_frontend.create_args_from_folder.assert_called_once_with(srcdir)
     captured = capsys.readouterr()
-
-    if "build_sdist" in hooks:
-        assert "Building sdist..." in captured.out
-        subprocess_frontend.return_value.build_sdist.assert_called_once_with(outdir)
-        assert "sdist out" in captured.out
-        assert "sdist err" in captured.err
-
-    if "build_wheel" in hooks:
-        assert "Building wheel..." in captured.out
-        subprocess_frontend.return_value.build_wheel.assert_called_once_with(outdir)
-        assert "wheel out" in captured.out
-        assert "wheel err" in captured.err
-
-    if "build_editable" in hooks:
-        assert "Building editable wheel..." in captured.out
-        subprocess_frontend.return_value.build_editable.assert_called_once_with(outdir)
-        assert "editable wheel out" in captured.out
-        assert "editable wheel err" in captured.err
+    frontend = subprocess_frontend.return_value
+    banners = {
+        "build_sdist": ("Building sdist...", "sdist out", "sdist err"),
+        "build_wheel": ("Building wheel...", "wheel out", "wheel err"),
+        "build_editable": ("Building editable wheel...", "editable wheel out", "editable wheel err"),
+    }
+    for hook in hooks:
+        banner, out, err = banners[hook]
+        assert banner in captured.out
+        assert out in captured.out
+        assert err in captured.err
+        getattr(frontend, hook).assert_called_once_with(outdir)
+    assert {hook for hook in banners if getattr(frontend, hook).called} == set(hooks)
