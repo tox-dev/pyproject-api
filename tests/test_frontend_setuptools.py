@@ -159,9 +159,11 @@ def test_result_missing(frontend_setuptools: SubprocessFrontend, tmp_path: Path,
     with pytest.raises(BackendFailed) as context:
         frontend_setuptools.send_cmd("_exit")
     exc = context.value
-    assert exc.exc_msg == f"Backend response file {tmp_path / 'pep517__exit-.json'} is missing"
-    assert exc.exc_type == "RuntimeError"
-    assert exc.code == 1
+    assert (exc.exc_msg, exc.exc_type, exc.code) == (
+        f"Backend response file {tmp_path / 'pep517__exit-.json'} is missing",
+        "RuntimeError",
+        1,
+    )
     assert "Traceback" in exc.err
     assert "PermissionError" in exc.err
 

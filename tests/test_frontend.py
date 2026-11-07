@@ -472,8 +472,10 @@ def test_bad_return_type_build_sdist(local_builder: Callable[[str], Path]) -> No
         frontend.build_sdist(tmp_path)
 
     exc = context.value
-    assert exc.exc_msg == f"'build_sdist' on 'build_tester' returned 1 but expected type {str!r}"
-    assert exc.exc_type == "TypeError"
+    assert (exc.exc_msg, exc.exc_type) == (
+        f"'build_sdist' on 'build_tester' returned 1 but expected type {str!r}",
+        "TypeError",
+    )
 
 
 def test_bad_return_type_build_wheel(local_builder: Callable[[str], Path]) -> None:
@@ -485,11 +487,13 @@ def test_bad_return_type_build_wheel(local_builder: Callable[[str], Path]) -> No
         frontend.build_wheel(tmp_path)
 
     exc = context.value
-    assert exc.exc_msg == f"'build_wheel' on 'build_tester' returned 1 but expected type {str!r}"
-    assert exc.exc_type == "TypeError"
+    assert (exc.exc_msg, exc.exc_type) == (
+        f"'build_wheel' on 'build_tester' returned 1 but expected type {str!r}",
+        "TypeError",
+    )
 
 
-@pytest.mark.parametrize("value", ["Path('demo.whl')", "b'demo.whl'", "{'demo.whl'}"])
+@pytest.mark.parametrize("value", ["Path('demo.whl')", "b'demo.whl'", "{'demo.whl'}"], ids=["path", "bytes", "set"])
 def test_non_serializable_hook_result(value: str, local_builder: Callable[[str], Path]) -> None:
     root = local_builder(f"""
         import sys
@@ -525,8 +529,10 @@ def test_bad_return_type_prepare_metadata_for_build_wheel(local_builder: Callabl
         frontend.prepare_metadata_for_build_wheel(tmp_path / "meta")
 
     exc = context.value
-    assert exc.exc_type == "TypeError"
-    assert exc.exc_msg == f"'prepare_metadata_for_build_wheel' on 'build_tester' returned 1 but expected type {str!r}"
+    assert (exc.exc_type, exc.exc_msg) == (
+        "TypeError",
+        f"'prepare_metadata_for_build_wheel' on 'build_tester' returned 1 but expected type {str!r}",
+    )
 
 
 def test_prepare_metadata_for_build_wheel_meta_is_root(local_builder: Callable[[str], Path]) -> None:
@@ -728,8 +734,10 @@ def test_backend_get_requires_for_build_editable_bad(demo_pkg_inline: Path, monk
     assert not exc.err
     assert " get_requires_for_build_editable " in exc.out
     assert not exc.args
-    assert exc.exc_type == "TypeError"
-    assert exc.exc_msg == "'get_requires_for_build_editable' on 'build' returned [1] but expected type 'list of string'"
+    assert (exc.exc_type, exc.exc_msg) == (
+        "TypeError",
+        "'get_requires_for_build_editable' on 'build' returned [1] but expected type 'list of string'",
+    )
 
 
 def test_backend_prepare_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -763,8 +771,10 @@ def test_backend_prepare_editable_bad(tmp_path: Path, demo_pkg_inline: Path, mon
     assert not exc.err
     assert " prepare_metadata_for_build_editable " in exc.out
     assert not exc.args
-    assert exc.exc_type == "TypeError"
-    assert exc.exc_msg == "'prepare_metadata_for_build_editable' on 'build' returned 1 but expected type <class 'str'>"
+    assert (exc.exc_type, exc.exc_msg) == (
+        "TypeError",
+        "'prepare_metadata_for_build_editable' on 'build' returned 1 but expected type <class 'str'>",
+    )
 
 
 def test_backend_build_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -800,8 +810,10 @@ def test_backend_build_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monke
     assert not exc.err
     assert " build_editable " in exc.out
     assert not exc.args
-    assert exc.exc_type == "TypeError"
-    assert exc.exc_msg == "'build_editable' on 'build' returned 1 but expected type <class 'str'>"
+    assert (exc.exc_type, exc.exc_msg) == (
+        "TypeError",
+        "'build_editable' on 'build' returned 1 but expected type <class 'str'>",
+    )
 
 
 def test_backend_failed_str_repr() -> None:
