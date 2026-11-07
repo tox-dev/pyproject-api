@@ -8,23 +8,23 @@ from textwrap import dedent
 from typing import Final
 from zipfile import ZipFile
 
-name: Final[str] = "demo_pkg_inline"
-_PKG_NAME = name.replace("_", "-")
+_NAME: Final[str] = "demo_pkg_inline"
+_PKG_NAME: Final[str] = _NAME.replace("_", "-")
 
-version: Final[str] = "1.0.0"
-_DIST_INFO: Final[str] = f"{name}-{version}.dist-info"
-_LOGIC: Final[str] = f"{name}/__init__.py"
+_VERSION: Final[str] = "1.0.0"
+_DIST_INFO: Final[str] = f"{_NAME}-{_VERSION}.dist-info"
+_LOGIC: Final[str] = f"{_NAME}/__init__.py"
 _METADATA_FILE: Final[str] = f"{_DIST_INFO}/METADATA"
-wheel: Final[str] = f"{_DIST_INFO}/WHEEL"
-RECORD: Final[str] = f"{_DIST_INFO}/RECORD"
-content = {
-    _LOGIC: f"def do():\n    print('greetings from {name}')",
+_WHEEL: Final[str] = f"{_DIST_INFO}/WHEEL"
+_RECORD: Final[str] = f"{_DIST_INFO}/RECORD"
+_CONTENT: Final[dict[str, str]] = {
+    _LOGIC: f"def do():\n    print('greetings from {_NAME}')",
 }
-metadata = {
+_METADATA: Final[dict[str, str]] = {
     _METADATA_FILE: f"""
         Metadata-Version: 2.1
         Name: {_PKG_NAME}
-        Version: {version}
+        Version: {_VERSION}
         Summary: UNKNOWN
         Home-page: UNKNOWN
         Author: UNKNOWN
@@ -34,15 +34,15 @@ metadata = {
 
         UNKNOWN
        """,
-    wheel: f"""
+    _WHEEL: f"""
         Wheel-Version: 1.0
-        Generator: {name}-{version}
+        Generator: {_NAME}-{_VERSION}
         Root-Is-Purelib: true
         Tag: py{sys.version_info[0]}-none-any
        """,
-    f"{_DIST_INFO}/top_level.txt": name,
-    RECORD: f"""
-        {name}/__init__.py,,
+    f"{_DIST_INFO}/top_level.txt": _NAME,
+    _RECORD: f"""
+        {_NAME}/__init__.py,,
         {_DIST_INFO}/METADATA,,
         {_DIST_INFO}/WHEEL,,
         {_DIST_INFO}/top_level.txt,,
@@ -56,7 +56,7 @@ def get_requires_for_build_wheel(config_settings: dict[str, str] | None = None) 
 
 
 def build_sdist(sdist_directory: str, config_settings: dict[str, str] | None = None) -> str:  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
-    result = f"{name}-{version}.tar.gz"
+    result = f"{_NAME}-{_VERSION}.tar.gz"
     with tarfile.open(str(Path(sdist_directory) / result), "w:gz") as tar:
         root = Path(__file__).parent
         tar.add(str(root / "build.py"), "build.py")
@@ -82,7 +82,7 @@ if "HAS_PREPARE_EDITABLE" in os.environ:
     ) -> str:
         dest = Path(metadata_directory) / _DIST_INFO
         dest.mkdir(parents=True)
-        for arc_name, data in metadata.items():
+        for arc_name, data in _METADATA.items():
             (dest.parent / arc_name).write_text(dedent(data).strip())
         print(f"created metadata {dest}")  # ruff:ignore[print]  # the test backend reports its progress on stdout
         if "PREPARE_EDITABLE_BAD" in os.environ:
@@ -105,10 +105,10 @@ def build_wheel(
     metadata_directory: str | None,
     config_settings: dict[str, str] | None,  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
 ) -> str:
-    base_name = f"{name}-{version}-py{sys.version_info[0]}-none-any.whl"
+    base_name = f"{_NAME}-{_VERSION}-py{sys.version_info[0]}-none-any.whl"
     path = Path(wheel_directory) / base_name
     with ZipFile(str(path), "w") as zip_file_handler:
-        for arc_name, data in content.items():
+        for arc_name, data in _CONTENT.items():
             zip_file_handler.writestr(arc_name, dedent(data).strip())
         if metadata_directory is not None:
             for sub_directory, _, filenames in os.walk(metadata_directory):
@@ -118,7 +118,7 @@ def build_wheel(
                         str(Path(sub_directory) / filename),
                     )
         else:
-            for arc_name, data in metadata.items():
+            for arc_name, data in _METADATA.items():
                 zip_file_handler.writestr(arc_name, dedent(data).strip())
     print(f"created wheel {path}")  # ruff:ignore[print]  # the test backend reports its progress on stdout
     return base_name
