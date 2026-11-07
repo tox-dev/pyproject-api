@@ -239,6 +239,12 @@ class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name
         )
 
 
+class _SendResult(NamedTuple):
+    value: Any
+    out: str
+    err: str
+
+
 class Frontend(ABC):
     """Abstract base class for a pyproject frontend."""
 
@@ -356,7 +362,7 @@ class Frontend(ABC):
             self._optional_hooks = result
         return self._optional_hooks
 
-    def _send(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
+    def _send(self, cmd: str, **kwargs: Any) -> _SendResult:
         with NamedTemporaryFile(prefix=f"pep517_{cmd}-") as result_file_marker:
             result_file = Path(result_file_marker.name).with_suffix(".json")
             msg = json.dumps(
@@ -383,7 +389,7 @@ class Frontend(ABC):
                 }
         out, err = status.out_err()
         if "return" in result:
-            return result["return"], out, err
+            return _SendResult(result["return"], out, err)
         raise BackendFailed(result, out, err)
 
     @abstractmethod
