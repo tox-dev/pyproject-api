@@ -133,6 +133,12 @@ lint.ignore = [
   "missing-trailing-comma",                    # Conflict with formatter
   "multi-line-summary-first-line",             # `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible
   "single-line-implicit-string-concatenation", # Conflict with formatter
+  "undocumented-magic-method",                 # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-class",                 # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-function",              # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-init",                  # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-method",                # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-nested-class",          # undocumented-public-api (simplint SMP903) covers the public API instead
 ]
 lint.per-file-ignores."src/pyproject_api/_backend.py" = [
   "ANN",
@@ -221,3 +227,6 @@ matrix.platforms = [ "linux_x86_64" ]
 # release-creator 4.4.0 needs a seven-day cutoff exception.
 # expires 2026-11-09
 packages.release-creator.uploaded-prior-to = 2026-11-02T21:45:00Z
+
+[tool.simplint]
+docstring-style = "rst"
