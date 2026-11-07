@@ -5,6 +5,22 @@ Release History
 
 .. towncrier release notes start
 
+.. _release-1-12-5:
+
+v1.12.5 (2026-11-07)
+--------------------
+
+.. _release-1-12-5-fixed:
+
+Fixed
+^^^^^
+
+- Propagate filesystem errors when clearing nested metadata directories (:pr:`357`) by :user:`Quinnod345` and
+  :user:`gaborbernat`.
+- Replace a symlink passed to ``ensure_empty_dir`` instead of following it, so a dangling link no longer raises
+  ``FileExistsError`` and a link to a directory no longer has its target emptied (:pr:`354`) by :user:`abhishekcpp007`
+  and :user:`gaborbernat`.
+
 .. _release-1-12-4:
 
 v1.12.4 (2026-11-04)
