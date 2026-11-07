@@ -14,7 +14,7 @@ import traceback
 
 
 class MissingCommand(TypeError):  # ruff:ignore[error-suffix-on-exception-name]
-    """Missing command."""
+    ...
 
 
 class BackendProxy:
@@ -147,6 +147,15 @@ def read_line(fd=0):
         if char != b"\r":
             content += char
     return content
+
+
+__all__ = [
+    "BackendProxy",
+    "MissingCommand",
+    "flush",
+    "read_line",
+    "run",
+]
 
 
 if __name__ == "__main__":

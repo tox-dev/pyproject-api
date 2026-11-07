@@ -31,13 +31,11 @@ def test_ensure_empty_dir_on_path_file(tmp_path: Path) -> None:
 
 
 def test_ensure_empty_dir_on_path_folder(tmp_path: Path) -> None:
-    """
-    ├──  a
-    │  ├──  a
-    │  └──  b
-    │     └──  c
-    └──  d
-    """
+    # ├──  a
+    # │  ├──  a
+    # │  └──  b
+    # │     └──  c
+    # └──  d
     path = tmp_path / "a"
     path.mkdir()
     (path / "a").write_text("")

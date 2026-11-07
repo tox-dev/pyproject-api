@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from sphinx.domains.python import PythonDomain
 
@@ -16,8 +16,8 @@ if TYPE_CHECKING:
     from sphinx.builders import Builder
     from sphinx.environment import BuildEnvironment
 project = name = "pyproject_api"
-company = "tox-dev"
-project_copyright = f"{company}"
+company: Final[str] = "tox-dev"
+project_copyright: Final[str] = f"{company}"
 version, release = __version__, __version__.split("+")[0]
 
 extensions = [
@@ -32,12 +32,12 @@ extensions = [
 ]
 master_doc, source_suffix = "index", ".rst"
 exclude_patterns = ["changelog.d/*"]
-autosectionlabel_maxdepth = 2
-towncrier_draft_autoversion_mode = "draft"
-towncrier_draft_include_empty = True
+autosectionlabel_maxdepth: Final[int] = 2
+towncrier_draft_autoversion_mode: Final[str] = "draft"
+towncrier_draft_include_empty: Final[bool] = True
 towncrier_draft_working_directory = Path(__file__).parent.parent
 
-html_theme = "furo"
+html_theme: Final[str] = "furo"
 html_title, html_last_updated_fmt = "pyproject-api docs", "%Y-%m-%dT%H:%M:%S"
 pygments_style, pygments_dark_style = "sphinx", "monokai"
 
@@ -56,11 +56,11 @@ intersphinx_mapping = {
     "packaging": ("https://packaging.pypa.io/en/latest", None),
 }
 
-nitpicky = True
+nitpicky: Final[bool] = True
 nitpick_ignore = []
 
 
-def setup(app: Sphinx) -> None:  # ruff:ignore[undocumented-public-function]
+def setup(app: Sphinx) -> None:
     class PatchedPythonDomain(PythonDomain):
         def resolve_xref(  # ruff:ignore[too-many-arguments, too-many-positional-arguments]
             self,

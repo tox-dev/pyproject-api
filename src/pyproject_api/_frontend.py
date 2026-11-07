@@ -14,7 +14,7 @@ from zipfile import ZipFile
 
 from packaging.requirements import Requirement
 
-from pyproject_api._util import ensure_empty_dir
+from ._util import ensure_empty_dir
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
@@ -25,7 +25,16 @@ ConfigSettings = dict[str, Any] | None
 
 
 class OptionalHooks(TypedDict, total=True):
-    """A flag indicating if the backend supports the optional hook or not."""
+    """
+    A flag indicating if the backend supports the optional hook or not.
+
+    :ivar get_requires_for_build_sdist:
+    :ivar prepare_metadata_for_build_wheel:
+    :ivar get_requires_for_build_wheel:
+    :ivar build_editable:
+    :ivar get_requires_for_build_editable:
+    :ivar prepare_metadata_for_build_editable:
+    """
 
     get_requires_for_build_sdist: bool
     prepare_metadata_for_build_wheel: bool
@@ -49,7 +58,13 @@ class CmdStatus(ABC):
 
 
 class RequiresBuildSdistResult(NamedTuple):
-    """Information collected while acquiring the source distribution build dependencies."""
+    """
+    Information collected while acquiring the source distribution build dependencies.
+
+    :param requires:
+    :param out:
+    :param err:
+    """
 
     #: source distribution build dependencies
     requires: tuple[Requirement, ...]
@@ -60,7 +75,13 @@ class RequiresBuildSdistResult(NamedTuple):
 
 
 class RequiresBuildWheelResult(NamedTuple):
-    """Information collected while acquiring the wheel build dependencies."""
+    """
+    Information collected while acquiring the wheel build dependencies.
+
+    :param requires:
+    :param out:
+    :param err:
+    """
 
     #: wheel build dependencies
     requires: tuple[Requirement, ...]
@@ -71,7 +92,13 @@ class RequiresBuildWheelResult(NamedTuple):
 
 
 class RequiresBuildEditableResult(NamedTuple):
-    """Information collected while acquiring the editable wheel build dependencies."""
+    """
+    Information collected while acquiring the editable wheel build dependencies.
+
+    :param requires:
+    :param out:
+    :param err:
+    """
 
     #: editable wheel build dependencies
     requires: tuple[Requirement, ...]
@@ -82,7 +109,13 @@ class RequiresBuildEditableResult(NamedTuple):
 
 
 class MetadataForBuildWheelResult(NamedTuple):
-    """Information collected while acquiring the wheel metadata."""
+    """
+    Information collected while acquiring the wheel metadata.
+
+    :param metadata:
+    :param out:
+    :param err:
+    """
 
     #: path to the wheel metadata
     metadata: Path
@@ -93,7 +126,13 @@ class MetadataForBuildWheelResult(NamedTuple):
 
 
 class MetadataForBuildEditableResult(NamedTuple):
-    """Information collected while acquiring the editable metadata."""
+    """
+    Information collected while acquiring the editable metadata.
+
+    :param metadata:
+    :param out:
+    :param err:
+    """
 
     #: path to the wheel metadata
     metadata: Path
@@ -104,7 +143,13 @@ class MetadataForBuildEditableResult(NamedTuple):
 
 
 class SdistResult(NamedTuple):
-    """Information collected while building a source distribution."""
+    """
+    Information collected while building a source distribution.
+
+    :param sdist:
+    :param out:
+    :param err:
+    """
 
     #: path to the built source distribution
     sdist: Path
@@ -115,7 +160,13 @@ class SdistResult(NamedTuple):
 
 
 class WheelResult(NamedTuple):
-    """Information collected while building a wheel."""
+    """
+    Information collected while building a wheel.
+
+    :param wheel:
+    :param out:
+    :param err:
+    """
 
     #: path to the built wheel artifact
     wheel: Path
@@ -126,7 +177,13 @@ class WheelResult(NamedTuple):
 
 
 class EditableResult(NamedTuple):
-    """Information collected while building an editable wheel."""
+    """
+    Information collected while building an editable wheel.
+
+    :param wheel:
+    :param out:
+    :param err:
+    """
 
     #: path to the built wheel artifact
     wheel: Path
@@ -137,7 +194,13 @@ class EditableResult(NamedTuple):
 
 
 class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name]
-    """An error of the build backend."""
+    """
+    An error of the build backend.
+
+    :param result:
+    :param out:
+    :param err:
+    """
 
     def __init__(self, result: dict[str, Any], out: str, err: str) -> None:
         super().__init__()
@@ -205,6 +268,14 @@ class Frontend(ABC):
         self._reuse_backend = reuse_backend
         self._optional_hooks: OptionalHooks | None = None
 
+    @property
+    def backend_args(self) -> list[str]:
+        """Startup arguments for a backend."""
+        result: list[str] = [str(_HERE / "_backend.py"), str(self._reuse_backend), self._backend_module]
+        if self._backend_obj:
+            result.append(self._backend_obj)
+        return result
+
     @classmethod
     def create_args_from_folder(
         cls,
@@ -214,7 +285,7 @@ class Frontend(ABC):
         Frontend creation arguments from a python project folder (should have a ``pyproject.toml`` file per PEP-518).
 
         :param folder: the python project folder
-        :return: the frontend creation args
+        :returns: the frontend creation args
         :raises ValueError: if ``build-system`` is not a table, one of its keys has a type PEP-518 rules out, or a
             ``backend-path`` entry does not resolve inside the project (PEP-517 in-tree backends)
 
@@ -256,33 +327,12 @@ class Frontend(ABC):
         backend_obj: str | None = paths[1] if len(paths) > 1 else None
         return folder, backend_paths, backend_module, backend_obj, requires, True
 
-    @property
-    def backend(self) -> str:
-        """Backend key."""
-        return f"{self._backend_module}{f':{self._backend_obj}' if self._backend_obj else ''}"
-
-    @property
-    def backend_args(self) -> list[str]:
-        """Startup arguments for a backend."""
-        result: list[str] = [str(_HERE / "_backend.py"), str(self._reuse_backend), self._backend_module]
-        if self._backend_obj:
-            result.append(self._backend_obj)
-        return result
-
-    @property
-    def optional_hooks(self) -> OptionalHooks:
-        """A dictionary indicating if the optional hook is supported or not."""
-        if self._optional_hooks is None:
-            result, _, __ = self._send("_optional_hooks")
-            self._optional_hooks = result
-        return self._optional_hooks
-
     def get_requires_for_build_sdist(self, config_settings: ConfigSettings | None = None) -> RequiresBuildSdistResult:
         """
         Get build requirements for a source distribution (per PEP-517).
 
         :param config_settings: run arguments
-        :return: outcome
+        :returns: outcome
         """
         if self.optional_hooks["get_requires_for_build_sdist"]:
             result, out, err = self._send(cmd="get_requires_for_build_sdist", config_settings=config_settings)
@@ -292,12 +342,71 @@ class Frontend(ABC):
             self._unexpected_response("get_requires_for_build_sdist", result, "list of string", out, err)
         return RequiresBuildSdistResult(tuple(Requirement(r) for r in cast("list[str]", result)), out, err)
 
+    @property
+    def optional_hooks(self) -> OptionalHooks:
+        """A dictionary indicating if the optional hook is supported or not."""
+        if self._optional_hooks is None:
+            result, _, __ = self._send("_optional_hooks")
+            self._optional_hooks = result
+        return self._optional_hooks
+
+    def _send(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
+        with NamedTemporaryFile(prefix=f"pep517_{cmd}-") as result_file_marker:
+            result_file = Path(result_file_marker.name).with_suffix(".json")
+            msg = json.dumps(
+                {
+                    "cmd": cmd,
+                    "kwargs": {k: (str(v) if isinstance(v, Path) else v) for k, v in kwargs.items()},
+                    "result": str(result_file),
+                },
+            )
+            with self._send_msg(cmd, result_file, msg) as status:
+                while not status.done:  # pragma: no branch
+                    sleep(0.001)  # wait a bit for things to happen
+            if result_file.exists():
+                try:
+                    with result_file.open("rt") as result_handler:
+                        result = json.load(result_handler)
+                finally:
+                    result_file.unlink()
+            else:
+                result = {
+                    "code": 1,
+                    "exc_type": "RuntimeError",
+                    "exc_msg": f"Backend response file {result_file} is missing",
+                }
+        out, err = status.out_err()
+        if "return" in result:
+            return result["return"], out, err
+        raise BackendFailed(result, out, err)
+
+    @abstractmethod
+    @contextmanager
+    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[CmdStatus]:
+        raise NotImplementedError
+
+    def _unexpected_response(
+        self,
+        cmd: str,
+        got: Any,
+        expected_type: Any,
+        out: str,
+        err: str,
+    ) -> NoReturn:
+        msg = f"{cmd!r} on {self.backend!r} returned {got!r} but expected type {expected_type!r}"
+        raise BackendFailed({"code": None, "exc_type": TypeError.__name__, "exc_msg": msg}, out, err)
+
+    @property
+    def backend(self) -> str:
+        """Backend key."""
+        return f"{self._backend_module}{f':{self._backend_obj}' if self._backend_obj else ''}"
+
     def get_requires_for_build_wheel(self, config_settings: ConfigSettings | None = None) -> RequiresBuildWheelResult:
         """
         Get build requirements for a wheel (per PEP-517).
 
         :param config_settings: run arguments
-        :return: outcome
+        :returns: outcome
         """
         if self.optional_hooks["get_requires_for_build_wheel"]:
             result, out, err = self._send(cmd="get_requires_for_build_wheel", config_settings=config_settings)
@@ -315,7 +424,7 @@ class Frontend(ABC):
         Get build requirements for an editable wheel build (per PEP-660).
 
         :param config_settings: run arguments
-        :return: outcome
+        :returns: outcome
         """
         if self.optional_hooks["get_requires_for_build_editable"]:
             result, out, err = self._send(cmd="get_requires_for_build_editable", config_settings=config_settings)
@@ -335,7 +444,7 @@ class Frontend(ABC):
 
         :param metadata_directory: where to generate the metadata
         :param config_settings: build arguments
-        :return: metadata generation result
+        :returns: metadata generation result
         """
         self._check_metadata_dir(metadata_directory)
         basename: str | None = None
@@ -376,7 +485,7 @@ class Frontend(ABC):
 
         :param metadata_directory: where to generate the metadata
         :param config_settings: build arguments
-        :return: metadata generation result
+        :returns: metadata generation result
         """
         self._check_metadata_dir(metadata_directory)
         basename: str | None = None
@@ -390,8 +499,7 @@ class Frontend(ABC):
             return None
         if not isinstance(basename, str):
             self._unexpected_response("prepare_metadata_for_build_editable", basename, str, out, err)
-        result = metadata_directory / basename
-        return MetadataForBuildEditableResult(result, out, err)
+        return MetadataForBuildEditableResult(metadata_directory / basename, out, err)
 
     def build_sdist(self, sdist_directory: Path, config_settings: ConfigSettings | None = None) -> SdistResult:
         """
@@ -399,7 +507,7 @@ class Frontend(ABC):
 
         :param sdist_directory: the folder where to build the source distribution
         :param config_settings: build arguments
-        :return: source distribution build result
+        :returns: source distribution build result
         """
         sdist_directory.mkdir(parents=True, exist_ok=True)
         basename, out, err = self._send(
@@ -423,7 +531,7 @@ class Frontend(ABC):
         :param wheel_directory: the folder where to build the wheel
         :param config_settings: build arguments
         :param metadata_directory: wheel metadata folder
-        :return: wheel build result
+        :returns: wheel build result
         """
         wheel_directory.mkdir(parents=True, exist_ok=True)
         basename, out, err = self._send(
@@ -448,7 +556,7 @@ class Frontend(ABC):
         :param wheel_directory: the folder where to build the editable wheel
         :param config_settings: build arguments
         :param metadata_directory: wheel metadata folder
-        :return: wheel build result
+        :returns: wheel build result
         """
         wheel_directory.mkdir(parents=True, exist_ok=True)
         basename, out, err = self._send(
@@ -460,17 +568,6 @@ class Frontend(ABC):
         if not isinstance(basename, str):
             self._unexpected_response("build_editable", basename, str, out, err)
         return EditableResult(wheel_directory / basename, out, err)
-
-    def _unexpected_response(
-        self,
-        cmd: str,
-        got: Any,
-        expected_type: Any,
-        out: str,
-        err: str,
-    ) -> NoReturn:
-        msg = f"{cmd!r} on {self.backend!r} returned {got!r} but expected type {expected_type!r}"
-        raise BackendFailed({"code": None, "exc_type": TypeError.__name__, "exc_msg": msg}, out, err)
 
     def metadata_from_built(
         self,
@@ -484,7 +581,8 @@ class Frontend(ABC):
         :param metadata_directory: directory where to put the metadata
         :param target: the type of wheel metadata to build
         :param config_settings: config settings to pass in to the build endpoint
-        :return:
+        :returns:
+        :raises RuntimeError:
         """
         hook = getattr(self, f"build_{target}")
         with self._wheel_directory() as wheel_directory:
@@ -515,41 +613,6 @@ class Frontend(ABC):
         with TemporaryDirectory() as wheel_directory:
             yield Path(wheel_directory)
 
-    def _send(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
-        with NamedTemporaryFile(prefix=f"pep517_{cmd}-") as result_file_marker:
-            result_file = Path(result_file_marker.name).with_suffix(".json")
-            msg = json.dumps(
-                {
-                    "cmd": cmd,
-                    "kwargs": {k: (str(v) if isinstance(v, Path) else v) for k, v in kwargs.items()},
-                    "result": str(result_file),
-                },
-            )
-            with self._send_msg(cmd, result_file, msg) as status:
-                while not status.done:  # pragma: no branch
-                    sleep(0.001)  # wait a bit for things to happen
-            if result_file.exists():
-                try:
-                    with result_file.open("rt") as result_handler:
-                        result = json.load(result_handler)
-                finally:
-                    result_file.unlink()
-            else:
-                result = {
-                    "code": 1,
-                    "exc_type": "RuntimeError",
-                    "exc_msg": f"Backend response file {result_file} is missing",
-                }
-        out, err = status.out_err()
-        if "return" in result:
-            return result["return"], out, err
-        raise BackendFailed(result, out, err)
-
-    @abstractmethod
-    @contextmanager
-    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Iterator[CmdStatus]:
-        raise NotImplementedError
-
 
 def _str_list(build_system: dict[str, Any], key: str) -> list[str]:
     if not isinstance(value := build_system[key], list) or not all(isinstance(entry, str) for entry in value):
@@ -574,6 +637,7 @@ def _in_tree_path(folder: Path, entry: str) -> Path:
 __all__ = [
     "BackendFailed",
     "CmdStatus",
+    "ConfigSettings",
     "EditableResult",
     "Frontend",
     "MetadataForBuildEditableResult",

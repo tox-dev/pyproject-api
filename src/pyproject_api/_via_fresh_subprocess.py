@@ -24,9 +24,6 @@ class SubprocessCmdStatus(CmdStatus, Thread):
         self._out_err: tuple[str, str] | None = None
         self.start()
 
-    def run(self) -> None:
-        self._out_err = self.process.communicate(input=self._msg)
-
     @property
     def done(self) -> bool:
         # communicate() sets returncode before run() stores what it returned, so a caller polling the process can
@@ -34,12 +31,19 @@ class SubprocessCmdStatus(CmdStatus, Thread):
         # finished only once its output is actually there.
         return self._out_err is not None
 
+    def run(self) -> None:
+        self._out_err = self.process.communicate(input=self._msg)
+
     def out_err(self) -> tuple[str, str]:
         return cast("tuple[str, str]", self._out_err)
 
 
 class SubprocessFrontend(Frontend):
-    """A frontend that creates fresh subprocess at every call to communicate with the backend."""
+    """
+    A frontend that creates fresh subprocess at every call to communicate with the backend.
+
+    :ivar executable:
+    """
 
     def __init__(
         self,
@@ -64,8 +68,7 @@ class SubprocessFrontend(Frontend):
     @contextmanager
     def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Generator[SubprocessCmdStatus, None, None]:  # ruff:ignore[unused-method-argument]
         env = os.environ.copy()
-        backend = os.pathsep.join(str(i) for i in self._backend_paths)
-        if backend:
+        if backend := os.pathsep.join(str(i) for i in self._backend_paths):
             env["PYTHONPATH"] = backend
         process = Popen(  # ruff:ignore[subprocess-without-shell-equals-true]  # fixed argv, no shell
             args=[self.executable, *self.backend_args],
@@ -90,9 +93,11 @@ class SubprocessFrontend(Frontend):
 
         :param cmd: the command to send
         :param kwargs: keyword arguments to the backend
-        :return: a tuple of: backend response, standard output text, standard error text
+        :returns: a tuple of: backend response, standard output text, standard error text
         """
         return self._send(cmd, **kwargs)
 
 
-__all__ = ("SubprocessFrontend",)
+__all__ = [
+    "SubprocessFrontend",
+]

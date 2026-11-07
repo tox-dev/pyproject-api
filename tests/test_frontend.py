@@ -36,14 +36,12 @@ def local_builder(tmp_path: Path) -> Callable[[str], Path]:
 
 def test_missing_backend(local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("")
-    toml = tmp_path / "pyproject.toml"
-    toml.write_text('[build-system]\nrequires=[]\nbuild-backend = "build_tester"')
+    (tmp_path / "pyproject.toml").write_text('[build-system]\nrequires=[]\nbuild-backend = "build_tester"')
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
     with pytest.raises(BackendFailed) as context:
         frontend.build_wheel(tmp_path / "wheel")
     exc = context.value
-    assert exc.exc_type == "RuntimeError"
-    assert exc.code == 1
+    assert (exc.exc_type, exc.code) == ("RuntimeError", 1)
     assert "failed to start backend" in exc.err
     assert "ModuleNotFoundError: No module named " in exc.err
 
@@ -280,8 +278,7 @@ def test_build_output_from_caller_directory(
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     directory = Path("artifacts") if relative else tmp_path / "artifacts"
 
-    result = getattr(frontend, f"build_{target}")(directory)
-    artifact = getattr(result, "sdist" if target == "sdist" else "wheel")
+    artifact = getattr(getattr(frontend, f"build_{target}")(directory), "sdist" if target == "sdist" else "wheel")
 
     assert artifact.parent == directory
     assert artifact.is_file()
@@ -449,8 +446,7 @@ def test_backend_obj(tmp_path: Path, backend_obj: str) -> None:
 
 @pytest.mark.parametrize("of_type", ["wheel", "sdist"])
 def test_get_requires_for_build_missing(of_type: str, local_builder: Callable[[str], Path]) -> None:
-    tmp_path = local_builder("")
-    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(local_builder(""))[:-1])
     result = getattr(frontend, f"get_requires_for_build_{of_type}")()
     assert result.requires == ()
 
@@ -465,8 +461,7 @@ def test_bad_return_type_get_requires_for_build(of_type: str, local_builder: Cal
 
     exc = context.value
     msg = f"'get_requires_for_build_{of_type}' on 'build_tester' returned 1 but expected type 'list of string'"
-    assert exc.exc_msg == msg
-    assert exc.exc_type == "TypeError"
+    assert (exc.exc_msg, exc.exc_type) == (msg, "TypeError")
 
 
 def test_bad_return_type_build_sdist(local_builder: Callable[[str], Path]) -> None:
@@ -513,8 +508,7 @@ def test_non_serializable_hook_result(value: str, local_builder: Callable[[str],
         frontend.build_wheel(root / "dist")
 
     exc = context.value
-    assert exc.code == 1
-    assert exc.exc_type == "TypeError"
+    assert (exc.code, exc.exc_type) == (1, "TypeError")
     assert "not JSON serializable" in exc.exc_msg
     assert "hook stdout" in exc.out
     assert "hook stderr" in exc.err
@@ -697,10 +691,7 @@ def test_bad_wheel_metadata_from_built_wheel(local_builder: Callable[[str], Path
 def test_create_no_pyproject(tmp_path: Path) -> None:
     result = SubprocessFrontend.create_args_from_folder(tmp_path)
     assert len(result) == 6
-    assert result[0] == tmp_path
-    assert result[1] == ()
-    assert result[2] == "setuptools.build_meta"
-    assert result[3] == "__legacy__"
+    assert (result[0], result[1], result[2], result[3]) == (tmp_path, (), "setuptools.build_meta", "__legacy__")
     assert all(isinstance(i, Requirement) for i in result[4])
     assert [str(i) for i in result[4]] == ["setuptools>=40.8.0"]
     assert result[5] is True
@@ -793,8 +784,7 @@ def test_backend_build_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypat
 
 
 def test_backend_build_wheel(tmp_path: Path, demo_pkg_inline: Path) -> None:
-    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = frontend.build_wheel(tmp_path)
+    result = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1]).build_wheel(tmp_path)
     assert result.wheel.name == "demo_pkg_inline-1.0.0-py3-none-any.whl"
     assert " build_wheel " in result.out
     assert not result.err
@@ -824,9 +814,7 @@ def test_backend_failed_str_repr() -> None:
     assert exc.code is None
 
     exc = BackendFailed({}, "", "")
-    assert exc.code == -2
-    assert exc.exc_type == "missing Exception type"
-    assert exc.exc_msg == "missing Exception message"
+    assert (exc.code, exc.exc_type, exc.exc_msg) == (-2, "missing Exception type", "missing Exception message")
     assert str(exc) == "packaging backend failed (code=-2), with missing Exception type: missing Exception message"
 
     exc = BackendFailed({"code": 2, "exc_type": "RuntimeError", "exc_msg": "line1\nline2"}, "", "")
@@ -852,11 +840,6 @@ def test_backend_failed_pickle(protocol: int, result: dict[str, Any]) -> None:
     assert repr(restored) == repr(exc)
 
 
-def _build_wheel_in_process(root: Path) -> str:
-    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
-    return str(frontend.build_wheel(root / "dist").wheel)
-
-
 def test_backend_failed_process_pool(local_builder: Callable[[str], Path]) -> None:
     root = local_builder("""
         import sys
@@ -871,9 +854,11 @@ def test_backend_failed_process_pool(local_builder: Callable[[str], Path]) -> No
         with pytest.raises(BackendFailed) as context:
             future.result(timeout=30)
     exc = context.value
-    assert exc.args == ()
-    assert exc.code == 1
-    assert exc.exc_type == "RuntimeError"
-    assert exc.exc_msg == "build failed"
+    assert (exc.args, exc.code, exc.exc_type, exc.exc_msg) == ((), 1, "RuntimeError", "build failed")
     assert "backend stdout" in exc.out
     assert "backend stderr" in exc.err
+
+
+def _build_wheel_in_process(root: Path) -> str:
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+    return str(frontend.build_wheel(root / "dist").wheel)

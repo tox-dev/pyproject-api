@@ -27,11 +27,10 @@ def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_invalid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str]) -> None:
-    """Validate behavior when an invalid request is issued."""
+    # Validate behavior when an invalid request is issued.
     command = "invalid json"
 
-    backend_proxy = mocker.MagicMock(spec=BackendProxy)
-    backend_proxy.return_value = "dummy_result"
+    backend_proxy = mocker.MagicMock(spec=BackendProxy, return_value="dummy_result")
     backend_proxy.__str__.return_value = "FakeBackendProxy"
     mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
     mocker.patch("pyproject_api._backend.read_line", return_value=bytearray(command, "utf-8"))
@@ -45,12 +44,10 @@ def test_invalid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.Captu
 
 
 def test_exception(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    """Ensure an exception in the backend is not bubbled up."""
-    result = str(tmp_path / "result")
-    command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": result})
+    # Ensure an exception in the backend is not bubbled up.
+    command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": str(tmp_path / "result")})
 
-    backend_proxy = mocker.MagicMock(spec=BackendProxy)
-    backend_proxy.side_effect = SystemExit(1)
+    backend_proxy = mocker.MagicMock(spec=BackendProxy, side_effect=SystemExit(1))
     backend_proxy.__str__.return_value = "FakeBackendProxy"
     mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
     mocker.patch("pyproject_api._backend.read_line", return_value=bytearray(command, "utf-8"))
@@ -67,12 +64,9 @@ def test_exception(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixt
 
 
 def test_valid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    """Validate the "success" path."""
-    result = str(tmp_path / "result")
-    command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": result})
+    command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": str(tmp_path / "result")})
 
-    backend_proxy = mocker.MagicMock(spec=BackendProxy)
-    backend_proxy.return_value = "dummy-result"
+    backend_proxy = mocker.MagicMock(spec=BackendProxy, return_value="dummy-result")
     backend_proxy.__str__.return_value = "FakeBackendProxy"
     mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
     mocker.patch("pyproject_api._backend.read_line", return_value=bytearray(command, "utf-8"))
@@ -88,14 +82,13 @@ def test_valid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
 
 
 def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    """Validate behavior when reusing the backend proxy process.
-
-    There are a couple of things we'd like to check here:
-
-    - Ensure we can actually reuse the process.
-    - Ensure an exception in a call to the backend does not affect subsequent calls.
-    - Ensure we can exit safely by calling the '_exit' command.
-    """
+    # Validate behavior when reusing the backend proxy process.
+    #
+    # There are a couple of things we'd like to check here:
+    #
+    # - Ensure we can actually reuse the process.
+    # - Ensure an exception in a call to the backend does not affect subsequent calls.
+    # - Ensure we can exit safely by calling the '_exit' command.
     results = [
         str(tmp_path / "result_a"),
         str(tmp_path / "result_b"),
@@ -115,8 +108,7 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
 
         return "dummy-result"
 
-    backend_proxy = mocker.MagicMock(spec=BackendProxy)
-    backend_proxy.side_effect = fake_backend
+    backend_proxy = mocker.MagicMock(spec=BackendProxy, side_effect=fake_backend)
     backend_proxy.__str__.return_value = "FakeBackendProxy"
     mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
     mocker.patch("pyproject_api._backend.read_line", side_effect=[bytearray(x, "utf-8") for x in commands])
@@ -193,8 +185,7 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previou
 def test_read_line_success() -> None:
     r, w = os.pipe()
     try:
-        line_in = b"this is a line\r\n"
-        os.write(w, line_in)
+        os.write(w, b"this is a line\r\n")
         line_out = read_line(fd=r)
         assert line_out == bytearray(b"this is a line")
     finally:
@@ -205,8 +196,7 @@ def test_read_line_success() -> None:
 def test_read_line_eof_before_newline() -> None:
     r, w = os.pipe()
     try:
-        line_in = b"this is a line"
-        os.write(w, line_in)
+        os.write(w, b"this is a line")
         os.close(w)
         line_out = read_line(fd=r)
         assert line_out == bytearray(b"this is a line")
