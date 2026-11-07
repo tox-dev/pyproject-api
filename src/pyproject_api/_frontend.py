@@ -6,6 +6,7 @@ import json
 import tomllib
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
+from datetime import date, datetime, time
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from time import sleep
@@ -24,6 +25,8 @@ _HERE: Final[Path] = Path(__file__).parent
 ConfigSettings = dict[str, Any] | None
 # the backend answers over a JSON protocol, so every value it returns is one of these
 JsonValue: TypeAlias = str | int | float | bool | list["JsonValue"] | dict[str, "JsonValue"] | None
+# tomllib yields these types for every value in a parsed document
+_TomlValue: TypeAlias = str | int | float | bool | datetime | date | time | list["_TomlValue"] | dict[str, "_TomlValue"]
 
 
 class OptionalHooks(TypedDict, total=True):
@@ -325,7 +328,7 @@ class Frontend(ABC):
         py_project_toml = folder / "pyproject.toml"
         if py_project_toml.exists():
             with py_project_toml.open("rb") as file_handler:
-                py_project = tomllib.load(file_handler)
+                py_project: dict[str, _TomlValue] = tomllib.load(file_handler)
             if not isinstance(build_system := py_project.get("build-system", {}), dict):
                 msg = f"build-system must be a table, got {build_system!r}"
                 raise ValueError(msg)
@@ -638,7 +641,7 @@ class Frontend(ABC):
             yield Path(wheel_directory)
 
 
-def _str_list(build_system: dict[str, Any], key: str) -> list[str]:
+def _str_list(build_system: dict[str, _TomlValue], key: str) -> list[str]:
     if not isinstance(value := build_system[key], list) or not all(isinstance(entry, str) for entry in value):
         msg = f"build-system.{key} must be a list of strings, got {value!r}"
         raise ValueError(msg)
