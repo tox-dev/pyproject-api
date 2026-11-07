@@ -16,6 +16,11 @@ backend runs from the project directory. Result paths retain the spelling of the
 directory argument. Configuration settings and generic command arguments are
 passed through unchanged.
 
+Metadata preparation replaces a symlink used as the output directory with a
+real directory, leaving the link target untouched. Dangling links are replaced
+too. Paths resolving to the project root or one of its ancestors are still
+rejected before cleanup.
+
 .. autoclass:: OptionalHooks
 
 Exceptions

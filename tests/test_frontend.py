@@ -585,23 +585,17 @@ def test_prepare_metadata_allows_sibling_directory(tmp_path: Path, hook: str) ->
     assert list(metadata_directory.iterdir()) == []
 
 
-@pytest.mark.parametrize("hook", ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"])
-def test_prepare_metadata_replaces_dangling_symlink(tmp_path: Path, hook: str) -> None:
-    root: Final[Path] = tmp_path / "project"
-    root.mkdir()
-    (root / "build_tester.py").write_text("")
-    metadata_directory: Final[Path] = tmp_path / "project-metadata"
-    metadata_directory.symlink_to(tmp_path / "missing")
-    frontend: Final[SubprocessFrontend] = SubprocessFrontend(root, (root,), "build_tester", None, ())
-
-    assert getattr(frontend, hook)(metadata_directory) is None
-
-    assert not metadata_directory.is_symlink()
-    assert list(metadata_directory.iterdir()) == []
-
-
-@pytest.mark.parametrize("hook", ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"])
-def test_prepare_metadata_keeps_symlink_target_contents(tmp_path: Path, hook: str) -> None:
+@pytest.mark.parametrize(
+    "hook",
+    [
+        pytest.param("prepare_metadata_for_build_wheel", id="wheel"),
+        pytest.param("prepare_metadata_for_build_editable", id="editable"),
+    ],
+)
+@pytest.mark.parametrize(
+    "target_name", [pytest.param("missing", id="dangling"), pytest.param("shared", id="directory")]
+)
+def test_prepare_metadata_replaces_symlink(tmp_path: Path, hook: str, target_name: str) -> None:
     root: Final[Path] = tmp_path / "project"
     root.mkdir()
     (root / "build_tester.py").write_text("")
@@ -609,10 +603,9 @@ def test_prepare_metadata_keeps_symlink_target_contents(tmp_path: Path, hook: st
     shared.mkdir()
     (shared / "keep.txt").write_text("keep me")
     metadata_directory: Final[Path] = tmp_path / "project-metadata"
-    metadata_directory.symlink_to(shared, target_is_directory=True)
-    frontend: Final[SubprocessFrontend] = SubprocessFrontend(root, (root,), "build_tester", None, ())
+    metadata_directory.symlink_to(tmp_path / target_name, target_is_directory=True)
 
-    assert getattr(frontend, hook)(metadata_directory) is None
+    assert getattr(SubprocessFrontend(root, (root,), "build_tester", None, ()), hook)(metadata_directory) is None
 
     assert not metadata_directory.is_symlink()
     assert list(metadata_directory.iterdir()) == []
