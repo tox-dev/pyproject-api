@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ._frontend import EditableResult, SdistResult, WheelResult
 
 
-def _main_parser() -> argparse.ArgumentParser:
+def main_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "A pyproject.toml-based build frontend. "
@@ -62,7 +62,7 @@ def _main_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str]) -> None:
-    args = _main_parser().parse_args(argv)
+    args = main_parser().parse_args(argv)
 
     outdir = (args.outdir or args.srcdir / "dist").absolute()
     # we intentionally do not build editable distributions by default
@@ -92,6 +92,7 @@ def main(argv: list[str]) -> None:
 
 __all__ = [
     "main",
+    "main_parser",
 ]
 
 
