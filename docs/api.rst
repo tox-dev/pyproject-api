@@ -16,10 +16,9 @@ backend runs from the project directory. Result paths retain the spelling of the
 directory argument. Configuration settings and generic command arguments are
 passed through unchanged.
 
-Metadata preparation clears the output directory before calling the metadata
-hook. If cleanup fails, the filesystem error propagates and the hook is not
-called. When extracting metadata from a built wheel, cleanup errors stop
-extraction after the wheel has been built.
+Metadata preparation clears the output directory before calling the metadata hook. If cleanup fails, the filesystem
+error propagates and the hook is not called. When extracting metadata from a built wheel, cleanup errors stop extraction
+after the wheel has been built.
 
 .. autoclass:: OptionalHooks
 
