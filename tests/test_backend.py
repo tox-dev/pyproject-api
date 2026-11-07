@@ -32,8 +32,8 @@ def test_invalid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.Captu
 
     backend_proxy = mocker.MagicMock(spec=BackendProxy, return_value="dummy_result")
     backend_proxy.__str__.return_value = "FakeBackendProxy"
-    mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
-    mocker.patch("pyproject_api._backend.read_line", return_value=bytearray(command, "utf-8"))
+    mocker.patch("pyproject_api._backend.BackendProxy", autospec=True, return_value=backend_proxy)
+    mocker.patch("pyproject_api._backend.read_line", autospec=True, return_value=bytearray(command, "utf-8"))
 
     ret = run([str(False), "a.dummy.module"])
 
@@ -49,8 +49,8 @@ def test_exception(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixt
 
     backend_proxy = mocker.MagicMock(spec=BackendProxy, side_effect=SystemExit(1))
     backend_proxy.__str__.return_value = "FakeBackendProxy"
-    mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
-    mocker.patch("pyproject_api._backend.read_line", return_value=bytearray(command, "utf-8"))
+    mocker.patch("pyproject_api._backend.BackendProxy", autospec=True, return_value=backend_proxy)
+    mocker.patch("pyproject_api._backend.read_line", autospec=True, return_value=bytearray(command, "utf-8"))
 
     ret = run([str(False), "a.dummy.module"])
 
@@ -68,8 +68,8 @@ def test_valid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
 
     backend_proxy = mocker.MagicMock(spec=BackendProxy, return_value="dummy-result")
     backend_proxy.__str__.return_value = "FakeBackendProxy"
-    mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
-    mocker.patch("pyproject_api._backend.read_line", return_value=bytearray(command, "utf-8"))
+    mocker.patch("pyproject_api._backend.BackendProxy", autospec=True, return_value=backend_proxy)
+    mocker.patch("pyproject_api._backend.read_line", autospec=True, return_value=bytearray(command, "utf-8"))
 
     ret = run([str(False), "a.dummy.module"])
 
@@ -110,8 +110,10 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
 
     backend_proxy = mocker.MagicMock(spec=BackendProxy, side_effect=fake_backend)
     backend_proxy.__str__.return_value = "FakeBackendProxy"
-    mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
-    mocker.patch("pyproject_api._backend.read_line", side_effect=[bytearray(x, "utf-8") for x in commands])
+    mocker.patch("pyproject_api._backend.BackendProxy", autospec=True, return_value=backend_proxy)
+    mocker.patch(
+        "pyproject_api._backend.read_line", autospec=True, side_effect=[bytearray(x, "utf-8") for x in commands]
+    )
 
     ret = run([str(True), "a.dummy.module"])
 

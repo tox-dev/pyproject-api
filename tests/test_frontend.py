@@ -194,7 +194,7 @@ def test_interrupted_frontend_cleans_up_backend(
             return "demo-1.0-py3-none-any.whl"
         """)
     status_factory: Final = mocker.spy(_via_fresh_subprocess, "SubprocessCmdStatus")
-    mocker.patch("pyproject_api._frontend.sleep", side_effect=error_type("build interrupted"))
+    mocker.patch("pyproject_api._frontend.sleep", autospec=True, side_effect=error_type("build interrupted"))
 
     try:
         with pytest.raises(error_type):

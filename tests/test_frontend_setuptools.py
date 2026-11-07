@@ -145,11 +145,13 @@ def test_result_missing(frontend_setuptools: SubprocessFrontend, tmp_path: Path,
         result = base.with_suffix(".json")
         result.write_text("")
         result.chmod(result.stat().st_mode & ~write)  # force json write to fail due to R/O
-        patch = mocker.patch("pyproject_api._frontend.Path.exists", return_value=False)  # make it missing
+        patch = mocker.patch(
+            "pyproject_api._frontend.Path.exists", autospec=True, return_value=False
+        )  # make it missing
         try:
             yield _Result(str(base))
         finally:
-            patch.stop()
+            mocker.stop(patch)
             result.chmod(result.stat().st_mode | write)  # cleanup
             result.unlink()
 
