@@ -670,9 +670,11 @@ def test_metadata_from_built_removes_stale_files(
     (metadata / "entry_points.txt").write_text("obsolete entry points")
     (tmp_path / "unrelated.txt").write_text("keep")
 
-    metadata_path: Final[Path] = SubprocessFrontend(
-        *SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1]
-    ).metadata_from_built(tmp_path, target)[0]
+    metadata_path: Final[Path] = (
+        SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+        .metadata_from_built(tmp_path, target)
+        .metadata
+    )
 
     assert {entry.name for entry in metadata_path.iterdir()} == {"top_level.txt", "WHEEL", "RECORD", "METADATA"}
     assert (tmp_path / "unrelated.txt").read_text() == "keep"
@@ -689,9 +691,11 @@ def test_metadata_from_built_replaces_directory_symlink(
     output.mkdir()
     (output / "demo_pkg_inline-1.0.0.dist-info").symlink_to(external, target_is_directory=True)
 
-    metadata_path: Final[Path] = SubprocessFrontend(
-        *SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1]
-    ).metadata_from_built(output, "wheel")[0]
+    metadata_path: Final[Path] = (
+        SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+        .metadata_from_built(output, "wheel")
+        .metadata
+    )
 
     assert not metadata_path.is_symlink()
     assert (metadata_path / "METADATA").is_file()
