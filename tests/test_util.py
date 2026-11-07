@@ -9,6 +9,8 @@ from pyproject_api._util import ensure_empty_dir
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from pytest_mock import MockerFixture
+
 
 def test_ensure_empty_dir_on_empty(tmp_path: Path) -> None:
     ensure_empty_dir(tmp_path)
@@ -80,3 +82,17 @@ def test_ensure_empty_dir_on_path_symlink_to_folder(tmp_path: Path) -> None:
     ensure_empty_dir(path)
     assert list(path.iterdir()) == []
     assert list(target.iterdir()) == [target / "c"]
+
+
+def test_nested_cleanup_error_propagates(tmp_path: Path, mocker: MockerFixture) -> None:
+    blocked = tmp_path / "blocked"
+    blocked.mkdir()
+    stale = blocked / "stale.txt"
+    stale.write_text("stale metadata")
+    failure = PermissionError("file removal refused")
+    mocker.patch("os.unlink", autospec=True, side_effect=failure)
+    with pytest.raises(PermissionError) as captured:
+        ensure_empty_dir(tmp_path)
+
+    assert captured.value is failure
+    assert stale.read_text() == "stale metadata"

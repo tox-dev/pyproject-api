@@ -20,6 +20,10 @@ Metadata preparation replaces a symlink used as the output directory with a real
 untouched. Dangling links are replaced too. Paths resolving to the project root or one of its ancestors are still
 rejected before cleanup.
 
+Metadata preparation clears the output directory before calling the metadata hook. If cleanup fails, the filesystem
+error propagates and the hook is not called. When extracting metadata from a built wheel, cleanup errors stop extraction
+after the wheel has been built.
+
 .. autoclass:: OptionalHooks
 
 Exceptions
