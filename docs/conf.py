@@ -20,7 +20,7 @@ company: Final[str] = "tox-dev"
 project_copyright: Final[str] = f"{company}"
 version, release = __version__, __version__.split("+")[0]
 
-extensions = [
+extensions: Final[list[str]] = [
     "sphinx_llm.txt",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.extlinks",
@@ -31,33 +31,38 @@ extensions = [
     "sphinxcontrib.towncrier.ext",
 ]
 master_doc, source_suffix = "index", ".rst"
-exclude_patterns = ["changelog.d/*"]
+exclude_patterns: Final[list[str]] = ["changelog.d/*"]
 autosectionlabel_maxdepth: Final[int] = 2
 towncrier_draft_autoversion_mode: Final[str] = "draft"
 towncrier_draft_include_empty: Final[bool] = True
-towncrier_draft_working_directory = Path(__file__).parent.parent
+towncrier_draft_working_directory: Final[Path] = Path(__file__).parent.parent
 
 html_theme: Final[str] = "furo"
 html_title, html_last_updated_fmt = "pyproject-api docs", "%Y-%m-%dT%H:%M:%S"
 pygments_style, pygments_dark_style = "sphinx", "monokai"
 
 autoclass_content, autodoc_typehints = "both", "none"
-autodoc_default_options = {"members": True, "member-order": "bysource", "undoc-members": True, "show-inheritance": True}
-inheritance_alias = {}
+autodoc_default_options: Final[dict[str, bool | str]] = {
+    "members": True,
+    "member-order": "bysource",
+    "undoc-members": True,
+    "show-inheritance": True,
+}
+inheritance_alias: Final[dict[str, str]] = {}
 
-extlinks = {
+extlinks: Final[dict[str, tuple[str, str]]] = {
     "issue": ("https://github.com/tox-dev/pyproject-api/issues/%s", "#%s"),
     "pull": ("https://github.com/tox-dev/pyproject-api/pull/%s", "PR #%s"),
     "pr": ("https://github.com/tox-dev/pyproject-api/pull/%s", "PR #%s"),
     "user": ("https://github.com/%s", "@%s"),
 }
-intersphinx_mapping = {
+intersphinx_mapping: Final[dict[str, tuple[str, None]]] = {
     "python": ("https://docs.python.org/3", None),
     "packaging": ("https://packaging.pypa.io/en/latest", None),
 }
 
 nitpicky: Final[bool] = True
-nitpick_ignore = []
+nitpick_ignore: Final[list[tuple[str, str]]] = []
 
 
 def setup(app: Sphinx) -> None:
@@ -83,4 +88,4 @@ def setup(app: Sphinx) -> None:
     app.add_domain(PatchedPythonDomain, override=True)
 
 
-markdown_http_base = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
+markdown_http_base: Final[str] = os.environ.get("READTHEDOCS_CANONICAL_URL", "")

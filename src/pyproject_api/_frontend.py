@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
 
 
-_HERE = Path(__file__).parent
+_HERE: Final[Path] = Path(__file__).parent
 ConfigSettings = dict[str, Any] | None
 
 
