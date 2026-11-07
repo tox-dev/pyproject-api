@@ -401,7 +401,7 @@ class Frontend(ABC):
         self,
         cmd: str,
         got: Any,
-        expected_type: Any,
+        expected_type: str | type[str],
         out: str,
         err: str,
     ) -> NoReturn:
