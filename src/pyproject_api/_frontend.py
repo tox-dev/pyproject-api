@@ -45,6 +45,8 @@ class OptionalHooks(TypedDict, total=True):
 
 
 class CmdStatus(ABC):
+    """Tracks a backend command until it finishes, then gives its output."""
+
     @property
     @abstractmethod
     def done(self) -> bool:
@@ -53,7 +55,11 @@ class CmdStatus(ABC):
 
     @abstractmethod
     def out_err(self) -> tuple[str, str]:
-        """:return: standard output and standard error text"""
+        """
+        Get the standard output and standard error text.
+
+        :returns: the output and error text
+        """
         raise NotImplementedError
 
 
