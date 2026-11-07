@@ -362,7 +362,7 @@ class Frontend(ABC):
         if metadata_path in project_root.parents:
             ancestor_message: Final[str] = f"the metadata directory can't contain the project root {self._root}"
             raise RuntimeError(ancestor_message)
-        if metadata_directory.exists():  # start with fresh
+        if metadata_directory.is_symlink() or metadata_directory.exists():
             ensure_empty_dir(metadata_directory)
         metadata_directory.mkdir(parents=True, exist_ok=True)
 
@@ -502,10 +502,7 @@ class Frontend(ABC):
                     if not root.endswith(".dist-info"):
                         continue
                     if basename is None:
-                        destination: Final[Path] = metadata_directory / root
-                        if destination.is_symlink():  # pragma: win32 no cover
-                            destination.unlink()
-                        ensure_empty_dir(destination)
+                        ensure_empty_dir(metadata_directory / root)
                     basename = root
                     zip_file.extract(name, extract_to)
         if basename is None:  # pragma: no branch

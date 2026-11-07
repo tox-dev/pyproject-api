@@ -16,6 +16,10 @@ backend runs from the project directory. Result paths retain the spelling of the
 directory argument. Configuration settings and generic command arguments are
 passed through unchanged.
 
+Metadata preparation replaces a symlink used as the output directory with a real directory, leaving the link target
+untouched. Dangling links are replaced too. Paths resolving to the project root or one of its ancestors are still
+rejected before cleanup.
+
 Metadata preparation clears the output directory before calling the metadata hook. If cleanup fails, the filesystem
 error propagates and the hook is not called. When extracting metadata from a built wheel, cleanup errors stop extraction
 after the wheel has been built.

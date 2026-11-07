@@ -585,6 +585,33 @@ def test_prepare_metadata_allows_sibling_directory(tmp_path: Path, hook: str) ->
     assert list(metadata_directory.iterdir()) == []
 
 
+@pytest.mark.parametrize(
+    "hook",
+    [
+        pytest.param("prepare_metadata_for_build_wheel", id="wheel"),
+        pytest.param("prepare_metadata_for_build_editable", id="editable"),
+    ],
+)
+@pytest.mark.parametrize(
+    "target_name", [pytest.param("missing", id="dangling"), pytest.param("shared", id="directory")]
+)
+def test_prepare_metadata_replaces_symlink(tmp_path: Path, hook: str, target_name: str) -> None:
+    root: Final[Path] = tmp_path / "project"
+    root.mkdir()
+    (root / "build_tester.py").write_text("")
+    shared: Final[Path] = tmp_path / "shared"
+    shared.mkdir()
+    (shared / "keep.txt").write_text("keep me")
+    metadata_directory: Final[Path] = tmp_path / "project-metadata"
+    metadata_directory.symlink_to(tmp_path / target_name, target_is_directory=True)
+
+    assert getattr(SubprocessFrontend(root, (root,), "build_tester", None, ()), hook)(metadata_directory) is None
+
+    assert not metadata_directory.is_symlink()
+    assert list(metadata_directory.iterdir()) == []
+    assert (shared / "keep.txt").read_text() == "keep me"
+
+
 def test_no_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str], Path]) -> None:
     txt = "def build_wheel(wheel_directory, config_settings=None, metadata_directory=None): return 'out'"
     tmp_path = local_builder(txt)
