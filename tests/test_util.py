@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from pyproject_api._util import ensure_empty_dir
 
 if TYPE_CHECKING:
@@ -43,6 +45,29 @@ def test_ensure_empty_dir_on_path_folder(tmp_path: Path) -> None:
     (tmp_path / "d").write_text("")
     ensure_empty_dir(tmp_path)
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    ("target_name", "target_is_directory"),
+    [
+        pytest.param("missing", False, id="dangling-file"),
+        pytest.param("missing", True, id="dangling-directory"),
+        pytest.param("file", False, id="file"),
+        pytest.param("folder", True, id="directory"),
+    ],
+)
+def test_ensure_empty_dir_replaces_symlink(tmp_path: Path, target_name: str, target_is_directory: bool) -> None:
+    (tmp_path / "file").write_text("keep file")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "c").write_text("keep folder contents")
+    path = tmp_path / "a"
+    path.symlink_to(tmp_path / target_name, target_is_directory=target_is_directory)
+    ensure_empty_dir(path)
+    assert not path.is_symlink()
+    assert list(path.iterdir()) == []
+    assert (tmp_path / "file").read_text() == "keep file"
+    assert (folder / "c").read_text() == "keep folder contents"
 
 
 def test_ensure_empty_dir_on_path_symlink_to_folder(tmp_path: Path) -> None:
