@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from contextlib import contextmanager
-from subprocess import PIPE, Popen  # ruff:ignore[suspicious-subprocess-import]
+from subprocess import PIPE, Popen  # ruff:ignore[suspicious-subprocess-import]  # the backend is spawned with a fixed argv, no shell
 from threading import Thread
 from typing import TYPE_CHECKING, Any, Final, cast
 
@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
     from packaging.requirements import Requirement
 
+    from ._frontend import JsonValue
+
 
 class SubprocessCmdStatus(CmdStatus, Thread):
     def __init__(self, process: Popen[str], msg: str | None = None) -> None:
@@ -24,9 +26,6 @@ class SubprocessCmdStatus(CmdStatus, Thread):
         self._out_err: tuple[str, str] | None = None
         self.start()
 
-    def run(self) -> None:
-        self._out_err = self.process.communicate(input=self._msg)
-
     @property
     def done(self) -> bool:
         # communicate() sets returncode before run() stores what it returned, so a caller polling the process can
@@ -34,12 +33,19 @@ class SubprocessCmdStatus(CmdStatus, Thread):
         # finished only once its output is actually there.
         return self._out_err is not None
 
+    def run(self) -> None:
+        self._out_err = self.process.communicate(input=self._msg)
+
     def out_err(self) -> tuple[str, str]:
         return cast("tuple[str, str]", self._out_err)
 
 
 class SubprocessFrontend(Frontend):
-    """A frontend that creates fresh subprocess at every call to communicate with the backend."""
+    """
+    A frontend that creates fresh subprocess at every call to communicate with the backend.
+
+    :ivar executable: the interpreter that runs the backend in a subprocess
+    """
 
     def __init__(
         self,
@@ -62,10 +68,9 @@ class SubprocessFrontend(Frontend):
         self.executable = sys.executable
 
     @contextmanager
-    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Generator[SubprocessCmdStatus, None, None]:  # ruff:ignore[unused-method-argument]
+    def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Generator[SubprocessCmdStatus, None, None]:  # ruff:ignore[unused-method-argument]  # mirrors the Frontend._send_msg signature
         env = os.environ.copy()
-        backend = os.pathsep.join(str(i) for i in self._backend_paths)
-        if backend:
+        if backend := os.pathsep.join(str(i) for i in self._backend_paths):
             env["PYTHONPATH"] = backend
         process = Popen(  # ruff:ignore[subprocess-without-shell-equals-true]  # fixed argv, no shell
             args=[self.executable, *self.backend_args],
@@ -84,15 +89,21 @@ class SubprocessFrontend(Frontend):
             process.kill()
             status.join()
 
-    def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[Any, str, str]:
+    def send_cmd(
+        self,
+        cmd: str,
+        **kwargs: Any,  # simplint: ignore[SMP602]  # send_cmd is a generic transport for any backend command
+    ) -> tuple[JsonValue, str, str]:
         """
         Send a command to the backend.
 
         :param cmd: the command to send
         :param kwargs: keyword arguments to the backend
-        :return: a tuple of: backend response, standard output text, standard error text
+        :returns: a tuple of: backend response, standard output text, standard error text
         """
         return self._send(cmd, **kwargs)
 
 
-__all__ = ("SubprocessFrontend",)
+__all__ = [
+    "SubprocessFrontend",
+]

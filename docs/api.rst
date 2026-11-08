@@ -4,7 +4,9 @@ API
 
 .. currentmodule:: pyproject_api
 
-.. autodata:: __version__
+.. data:: __version__
+
+   The semantic version of the project.
 
 Frontend
 --------
@@ -67,6 +69,14 @@ Editable
 Wheel
 ~~~~~
 .. autoclass:: WheelResult
+
+Frontend arguments
+~~~~~~~~~~~~~~~~~~
+.. autoclass:: FrontendArgs
+
+Built metadata
+~~~~~~~~~~~~~~
+.. autoclass:: BuiltMetadata
 
 Fresh subprocess frontend
 -------------------------

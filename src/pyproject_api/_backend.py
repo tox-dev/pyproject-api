@@ -13,8 +13,8 @@ import sys
 import traceback
 
 
-class MissingCommand(TypeError):  # ruff:ignore[error-suffix-on-exception-name]
-    """Missing command."""
+class MissingCommand(TypeError):  # ruff:ignore[error-suffix-on-exception-name]  # the frontend reports it by this name
+    ...
 
 
 class BackendProxy:
@@ -37,7 +37,7 @@ class BackendProxy:
     def __str__(self):
         return f"{self.__class__.__name__}(backend={self.backend})"
 
-    def _exit(self):  # ruff:ignore[no-self-use]
+    def _exit(self):  # ruff:ignore[no-self-use]  # called through BackendProxy.__call__
         return 0
 
     def _optional_hooks(self):
@@ -59,77 +59,86 @@ def flush():
     sys.stdout.flush()
 
 
-def run(argv):  # ruff:ignore[complex-structure, too-many-branches, too-many-statements]
+def run(argv):
     reuse_process = argv[0].lower() == "true"
-
     try:
-        backend_proxy = BackendProxy(argv[1], None if len(argv) == 2 else argv[2])  # ruff:ignore[magic-value-comparison]
+        backend_proxy = BackendProxy(argv[1], None if len(argv) == 2 else argv[2])  # ruff:ignore[magic-value-comparison]  # argv may omit the backend object
     except BaseException:
         print("failed to start backend", file=sys.stderr)
         raise
     else:
         print(f"started backend {backend_proxy}", file=sys.stdout)
     finally:
-        flush()  # pragma: no branch
+        flush()  # pragma: no branch # the finally runs on both paths
     while True:
         content = read_line()
         if not content:
             continue
         flush()  # flush any output generated before
+        # ignore messages that are not valid JSON and contain a valid result path
         try:
-            # python 2 does not support loading from bytearray
-            if sys.version_info[0] == 2:  # pragma: no branch
-                content = content.decode()  # pragma: no cover
-            parsed_message = json.loads(content)
-            result_file = parsed_message["result"]
-        except Exception:  # ruff:ignore[blind-except]
-            # ignore messages that are not valid JSON and contain a valid result path
+            parsed_message, result_file = _parse_request(content)
+        except Exception:  # ruff:ignore[blind-except]  # any malformed request is reported and skipped
             print(f"Backend: incorrect request to backend: {content}", file=sys.stderr)
             flush()
         else:
-            result = {}
-            response = None
-            try:
-                cmd = parsed_message["cmd"]
-                print("Backend: run command {} with args {}".format(cmd, parsed_message["kwargs"]))
-                result["return"] = backend_proxy(cmd, **parsed_message["kwargs"])
-                response = json.dumps(result)
-            except BaseException as exception:  # ruff:ignore[blind-except]
-                try:
-                    result = {
-                        "code": exception.code if isinstance(exception, SystemExit) else 1,
-                        "exc_type": exception.__class__.__name__,
-                        "exc_msg": str(exception),
-                    }
-                    response = json.dumps(result)
-                except BaseException:  # ruff:ignore[blind-except]
-                    result = {
-                        "code": 1,
-                        "exc_type": "RuntimeError",
-                        "exc_msg": "Failed to serialize backend exception",
-                    }
-                    response = json.dumps(result)
-                if not isinstance(exception, MissingCommand):  # for missing command do not print stack
-                    traceback.print_exc()
-            else:
-                if cmd == "_exit":
-                    break
-            finally:
-                try:
-                    encoding = locale.getpreferredencoding(do_setlocale=False)
-                    with open(  # ruff:ignore[builtin-open, write-whole-file]  # Python 2.7 compatible
-                        result_file, "w", encoding=encoding
-                    ) as file_handler:
-                        file_handler.write(response)
-                except Exception:  # ruff:ignore[blind-except]
-                    traceback.print_exc()
-                finally:
-                    # used as done marker by frontend
-                    print(f"Backend: Wrote response {result} to {result_file}")
-                    flush()  # pragma: no branch
+            result, response = _execute(backend_proxy, parsed_message)
+            _write_response(result_file, result, response)
+            if "return" in result and parsed_message.get("cmd") == "_exit":
+                break
         if reuse_process is False:  # pragma: no branch # no test for reuse process in root test env
             break
     return 0
+
+
+def _parse_request(content):
+    # python 2 does not support loading from bytearray
+    if sys.version_info[0] == 2:  # pragma: no branch # only python 2 takes this path
+        content = content.decode()  # pragma: no cover # only python 2 takes this path
+    parsed_message = json.loads(content)
+    return parsed_message, parsed_message["result"]
+
+
+def _execute(backend_proxy, parsed_message):
+    result = {}
+    try:
+        cmd = parsed_message["cmd"]
+        print("Backend: run command {} with args {}".format(cmd, parsed_message["kwargs"]))
+        result["return"] = backend_proxy(cmd, **parsed_message["kwargs"])
+        return result, json.dumps(result)
+    except BaseException as exception:  # ruff:ignore[blind-except]  # every failure is sent back to the frontend
+        try:
+            result = {
+                "code": exception.code if isinstance(exception, SystemExit) else 1,
+                "exc_type": exception.__class__.__name__,
+                "exc_msg": str(exception),
+            }
+            response = json.dumps(result)
+        except BaseException:  # ruff:ignore[blind-except]  # the exception itself may not serialize
+            result = {
+                "code": 1,
+                "exc_type": "RuntimeError",
+                "exc_msg": "Failed to serialize backend exception",
+            }
+            response = json.dumps(result)
+        if not isinstance(exception, MissingCommand):  # for missing command do not print stack
+            traceback.print_exc()
+        return result, response
+
+
+def _write_response(result_file, result, response):
+    try:
+        encoding = locale.getpreferredencoding(do_setlocale=False)
+        with open(  # ruff:ignore[builtin-open, write-whole-file]  # the module stays Python 2.7 compatible
+            result_file, "w", encoding=encoding
+        ) as file_handler:
+            file_handler.write(response)
+    except Exception:  # ruff:ignore[blind-except]  # the frontend learns of the failure from the missing response
+        traceback.print_exc()
+    finally:
+        # used as done marker by frontend
+        print(f"Backend: Wrote response {result} to {result_file}")
+        flush()  # pragma: no branch # the finally runs on every path
 
 
 def read_line(fd=0):
@@ -141,12 +150,21 @@ def read_line(fd=0):
             if not content:
                 msg = "EOF without reading anything"
                 raise EOFError(msg)  # we didn't get a line at all, let the caller know
-            break  # pragma: no cover
+            break  # pragma: no cover # covered by test_read_line_eof_before_newline
         if char == b"\n":
             break
         if char != b"\r":
             content += char
     return content
+
+
+__all__ = [
+    "BackendProxy",
+    "MissingCommand",
+    "flush",
+    "read_line",
+    "run",
+]
 
 
 if __name__ == "__main__":

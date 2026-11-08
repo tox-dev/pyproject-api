@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from contextlib import contextmanager
 from stat import S_IWGRP, S_IWOTH, S_IWUSR
 from typing import TYPE_CHECKING, NamedTuple
@@ -46,8 +45,7 @@ def frontend_setuptools(tmp_path_factory: TempPathFactory) -> SubprocessFrontend
     demo = prj / "demo"
     demo.mkdir()
     (demo / "__init__.py").write_text("def a(): print('ok')")
-    args = SubprocessFrontend.create_args_from_folder(prj)
-    return SubprocessFrontend(*args[:-1])
+    return SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(prj)[:-1])
 
 
 def test_setuptools_get_requires_for_build_sdist(frontend_setuptools: SubprocessFrontend) -> None:
@@ -73,7 +71,7 @@ def test_setuptools_prepare_metadata_for_build_wheel(frontend_setuptools: Subpro
     assert dist.version == "1.0"
     assert dist.metadata["Name"] == "demo"
     values = dist.metadata.get_all("Requires-Dist") or []
-    expected = ["magic>3", "requests>2"] if sys.version_info[0:2] > (3, 8) else ["magic >3", "requests >2"]
+    expected = ["magic>3", "requests>2"]
     assert sorted(values) == expected
     assert isinstance(result.out, str)
     assert isinstance(result.err, str)
@@ -125,24 +123,18 @@ def test_setuptools_exception(frontend_setuptools: SubprocessFrontend) -> None:
     assert isinstance(context.value.err, str)
     assert context.value.exc_type == "TypeError"
     msg = "_BuildMetaBackend.build_wheel() missing 1 required positional argument: 'wheel_directory'"
-    assert context.value.exc_msg == msg
-    assert context.value.code == 1
-    assert context.value.args == ()
+    assert (context.value.exc_msg, context.value.code, context.value.args) == (msg, 1, ())
     assert repr(context.value)
     assert str(context.value)
     assert repr(context.value) != str(context.value)
 
 
 def test_bad_message(frontend_setuptools: SubprocessFrontend, tmp_path: Path) -> None:
-    with frontend_setuptools._send_msg("bad_cmd", tmp_path / "a", "{{") as status:  # ruff:ignore[private-member-access]
+    with frontend_setuptools._send_msg("bad_cmd", tmp_path / "a", "{{") as status:  # ruff:ignore[private-member-access]  # tests the error path of the private sender
         status.join()
     out, err = status.out_err()
     assert out
     assert "Backend: incorrect request to backend: bytearray(b'{{')" in err
-
-
-class _Result(NamedTuple):
-    name: str
 
 
 def test_result_missing(frontend_setuptools: SubprocessFrontend, tmp_path: Path, mocker: MockerFixture) -> None:
@@ -153,11 +145,13 @@ def test_result_missing(frontend_setuptools: SubprocessFrontend, tmp_path: Path,
         result = base.with_suffix(".json")
         result.write_text("")
         result.chmod(result.stat().st_mode & ~write)  # force json write to fail due to R/O
-        patch = mocker.patch("pyproject_api._frontend.Path.exists", return_value=False)  # make it missing
+        patch = mocker.patch(
+            "pyproject_api._frontend.Path.exists", autospec=True, return_value=False
+        )  # make it missing
         try:
             yield _Result(str(base))
         finally:
-            patch.stop()
+            mocker.stop(patch)
             result.chmod(result.stat().st_mode | write)  # cleanup
             result.unlink()
 
@@ -165,8 +159,14 @@ def test_result_missing(frontend_setuptools: SubprocessFrontend, tmp_path: Path,
     with pytest.raises(BackendFailed) as context:
         frontend_setuptools.send_cmd("_exit")
     exc = context.value
-    assert exc.exc_msg == f"Backend response file {tmp_path / 'pep517__exit-.json'} is missing"
-    assert exc.exc_type == "RuntimeError"
-    assert exc.code == 1
+    assert (exc.exc_msg, exc.exc_type, exc.code) == (
+        f"Backend response file {tmp_path / 'pep517__exit-.json'} is missing",
+        "RuntimeError",
+        1,
+    )
     assert "Traceback" in exc.err
     assert "PermissionError" in exc.err
+
+
+class _Result(NamedTuple):
+    name: str

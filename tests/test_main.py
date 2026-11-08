@@ -47,48 +47,15 @@ def test_cli_build_relative_to_caller(
 @pytest.mark.parametrize(
     ("cli_args", "srcdir", "outdir", "hooks"),
     [
-        (
-            [],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_sdist", "build_wheel"],
+        pytest.param([], Path.cwd(), Path.cwd() / "dist", ["build_sdist", "build_wheel"], id="default"),
+        pytest.param(
+            ["src"], Path("src"), Path("src").absolute() / "dist", ["build_sdist", "build_wheel"], id="srcdir"
         ),
-        (
-            ["src"],
-            Path("src"),
-            Path("src").absolute() / "dist",
-            ["build_sdist", "build_wheel"],
-        ),
-        (
-            ["-o", "out"],
-            Path.cwd(),
-            Path("out").absolute(),
-            ["build_sdist", "build_wheel"],
-        ),
-        (
-            ["-s"],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_sdist"],
-        ),
-        (
-            ["-w"],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_wheel"],
-        ),
-        (
-            ["-e"],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_editable"],
-        ),
-        (
-            ["-s", "-w"],
-            Path.cwd(),
-            Path.cwd() / "dist",
-            ["build_sdist", "build_wheel"],
-        ),
+        pytest.param(["-o", "out"], Path.cwd(), Path("out").absolute(), ["build_sdist", "build_wheel"], id="outdir"),
+        pytest.param(["-s"], Path.cwd(), Path.cwd() / "dist", ["build_sdist"], id="sdist"),
+        pytest.param(["-w"], Path.cwd(), Path.cwd() / "dist", ["build_wheel"], id="wheel"),
+        pytest.param(["-e"], Path.cwd(), Path.cwd() / "dist", ["build_editable"], id="editable"),
+        pytest.param(["-s", "-w"], Path.cwd(), Path.cwd() / "dist", ["build_sdist", "build_wheel"], id="sdist-wheel"),
     ],
 )
 def test_parse_args(
@@ -121,21 +88,16 @@ def test_parse_args(
 
     subprocess_frontend.create_args_from_folder.assert_called_once_with(srcdir)
     captured = capsys.readouterr()
-
-    if "build_sdist" in hooks:
-        assert "Building sdist..." in captured.out
-        subprocess_frontend.return_value.build_sdist.assert_called_once_with(outdir)
-        assert "sdist out" in captured.out
-        assert "sdist err" in captured.err
-
-    if "build_wheel" in hooks:
-        assert "Building wheel..." in captured.out
-        subprocess_frontend.return_value.build_wheel.assert_called_once_with(outdir)
-        assert "wheel out" in captured.out
-        assert "wheel err" in captured.err
-
-    if "build_editable" in hooks:
-        assert "Building editable wheel..." in captured.out
-        subprocess_frontend.return_value.build_editable.assert_called_once_with(outdir)
-        assert "editable wheel out" in captured.out
-        assert "editable wheel err" in captured.err
+    frontend = subprocess_frontend.return_value
+    banners = {
+        "build_sdist": ("Building sdist...", "sdist out", "sdist err"),
+        "build_wheel": ("Building wheel...", "wheel out", "wheel err"),
+        "build_editable": ("Building editable wheel...", "editable wheel out", "editable wheel err"),
+    }
+    for hook in hooks:
+        banner, out, err = banners[hook]
+        assert banner in captured.out
+        assert out in captured.out
+        assert err in captured.err
+        getattr(frontend, hook).assert_called_once_with(outdir)
+    assert {hook for hook in banners if getattr(frontend, hook).called} == set(hooks)

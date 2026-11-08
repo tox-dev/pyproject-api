@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess  # ruff:ignore[suspicious-subprocess-import]
+import subprocess  # ruff:ignore[suspicious-subprocess-import]  # runs the backend as a child process
 import sys
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Final
 
 import pytest
 
@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 
     import pytest_mock
 
+    from pyproject_api._frontend import JsonValue
+
 
 def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(ImportError):
@@ -27,14 +29,13 @@ def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_invalid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str]) -> None:
-    """Validate behavior when an invalid request is issued."""
+    # Validate behavior when an invalid request is issued.
     command = "invalid json"
 
-    backend_proxy = mocker.MagicMock(spec=BackendProxy)
-    backend_proxy.return_value = "dummy_result"
+    backend_proxy = mocker.MagicMock(spec=BackendProxy, return_value="dummy_result")
     backend_proxy.__str__.return_value = "FakeBackendProxy"
-    mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
-    mocker.patch("pyproject_api._backend.read_line", return_value=bytearray(command, "utf-8"))
+    mocker.patch("pyproject_api._backend.BackendProxy", autospec=True, return_value=backend_proxy)
+    mocker.patch("pyproject_api._backend.read_line", autospec=True, return_value=bytearray(command, "utf-8"))
 
     ret = run([str(False), "a.dummy.module"])
 
@@ -45,15 +46,13 @@ def test_invalid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.Captu
 
 
 def test_exception(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    """Ensure an exception in the backend is not bubbled up."""
-    result = str(tmp_path / "result")
-    command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": result})
+    # Ensure an exception in the backend is not bubbled up.
+    command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": str(tmp_path / "result")})
 
-    backend_proxy = mocker.MagicMock(spec=BackendProxy)
-    backend_proxy.side_effect = SystemExit(1)
+    backend_proxy = mocker.MagicMock(spec=BackendProxy, side_effect=SystemExit(1))
     backend_proxy.__str__.return_value = "FakeBackendProxy"
-    mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
-    mocker.patch("pyproject_api._backend.read_line", return_value=bytearray(command, "utf-8"))
+    mocker.patch("pyproject_api._backend.BackendProxy", autospec=True, return_value=backend_proxy)
+    mocker.patch("pyproject_api._backend.read_line", autospec=True, return_value=bytearray(command, "utf-8"))
 
     ret = run([str(False), "a.dummy.module"])
 
@@ -67,15 +66,12 @@ def test_exception(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixt
 
 
 def test_valid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    """Validate the "success" path."""
-    result = str(tmp_path / "result")
-    command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": result})
+    command = json.dumps({"cmd": "dummy_command", "kwargs": {"foo": "bar"}, "result": str(tmp_path / "result")})
 
-    backend_proxy = mocker.MagicMock(spec=BackendProxy)
-    backend_proxy.return_value = "dummy-result"
+    backend_proxy = mocker.MagicMock(spec=BackendProxy, return_value="dummy-result")
     backend_proxy.__str__.return_value = "FakeBackendProxy"
-    mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
-    mocker.patch("pyproject_api._backend.read_line", return_value=bytearray(command, "utf-8"))
+    mocker.patch("pyproject_api._backend.BackendProxy", autospec=True, return_value=backend_proxy)
+    mocker.patch("pyproject_api._backend.read_line", autospec=True, return_value=bytearray(command, "utf-8"))
 
     ret = run([str(False), "a.dummy.module"])
 
@@ -88,14 +84,13 @@ def test_valid_request(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
 
 
 def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    """Validate behavior when reusing the backend proxy process.
-
-    There are a couple of things we'd like to check here:
-
-    - Ensure we can actually reuse the process.
-    - Ensure an exception in a call to the backend does not affect subsequent calls.
-    - Ensure we can exit safely by calling the '_exit' command.
-    """
+    # Validate behavior when reusing the backend proxy process.
+    #
+    # There are a couple of things we'd like to check here:
+    #
+    # - Ensure we can actually reuse the process.
+    # - Ensure an exception in a call to the backend does not affect subsequent calls.
+    # - Ensure we can exit safely by calling the '_exit' command.
     results = [
         str(tmp_path / "result_a"),
         str(tmp_path / "result_b"),
@@ -109,17 +104,18 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
         json.dumps({"cmd": "_exit", "kwargs": {}, "result": results[3]}),
     ]
 
-    def fake_backend(name: str, *args: Any, **kwargs: Any) -> Any:  # ruff:ignore[unused-function-argument]
+    def fake_backend(name: str, *args: JsonValue, **kwargs: JsonValue) -> JsonValue:  # ruff:ignore[unused-function-argument]  # the fake backend accepts any call
         if name == "dummy_command_b":
             raise SystemExit(2)
 
         return "dummy-result"
 
-    backend_proxy = mocker.MagicMock(spec=BackendProxy)
-    backend_proxy.side_effect = fake_backend
+    backend_proxy = mocker.MagicMock(spec=BackendProxy, side_effect=fake_backend)
     backend_proxy.__str__.return_value = "FakeBackendProxy"
-    mocker.patch("pyproject_api._backend.BackendProxy", return_value=backend_proxy)
-    mocker.patch("pyproject_api._backend.read_line", side_effect=[bytearray(x, "utf-8") for x in commands])
+    mocker.patch("pyproject_api._backend.BackendProxy", autospec=True, return_value=backend_proxy)
+    mocker.patch(
+        "pyproject_api._backend.read_line", autospec=True, side_effect=[bytearray(x, "utf-8") for x in commands]
+    )
 
     ret = run([str(True), "a.dummy.module"])
 
@@ -134,9 +130,17 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
     assert "SystemExit: 2" in captured.err
 
 
-@pytest.mark.parametrize("code", ["Path('failure.txt')", "b'failure'"])
-@pytest.mark.parametrize("previous_success", [False, True])
-def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previous_success: bool) -> None:
+@pytest.mark.parametrize(
+    "code", [pytest.param("Path('failure.txt')", id="path"), pytest.param("b'failure'", id="bytes")]
+)
+@pytest.mark.parametrize(
+    "failures",
+    [
+        pytest.param([True, False], id="fails-first"),
+        pytest.param([False, True, False], id="succeeds-first"),
+    ],
+)
+def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, failures: list[bool]) -> None:
     (tmp_path / "exit_backend.py").write_text(
         dedent(f"""
         import os
@@ -153,7 +157,6 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previou
             return "demo-{{}}.whl".format(calls)
         """)
     )
-    failures = [False, True, False] if previous_success else [True, False]
     requests = [
         {"cmd": "build_wheel", "kwargs": {"wheel_directory": str(tmp_path), "config_settings": {"fail": fail}}}
         for fail in failures
@@ -165,7 +168,7 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previou
     ]
     completed = subprocess.run(
         [sys.executable, _backend.__file__, "True", "exit_backend"],
-        input="\n".join(messages) + "\n",
+        input="".join(f"{message}\n" for message in messages),
         capture_output=True,
         text=True,
         cwd=tmp_path,
@@ -179,9 +182,10 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previou
     assert "return" not in failed
     assert failed == {"code": 1, "exc_type": "RuntimeError", "exc_msg": "Failed to serialize backend exception"}
     assert completed.returncode == 0, completed.stderr
-    for index, fail in enumerate(failures):
-        if not fail:
-            assert json.loads(result_files[index].read_text()) == {"return": f"demo-{index + 1}.whl"}
+    successes = [index for index, fail in enumerate(failures) if not fail]
+    assert {index: json.loads(result_files[index].read_text()) for index in successes} == {
+        index: {"return": f"demo-{index + 1}.whl"} for index in successes
+    }
     assert json.loads(result_files[-1].read_text()) == {"return": 0}
     hook_lines = [line for line in completed.stdout.splitlines() if line.startswith("hook pid=")]
     assert len(hook_lines) == len(failures)
@@ -191,37 +195,35 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, previou
 
 
 def test_read_line_success() -> None:
-    r, w = os.pipe()
+    read_fd, write_fd = os.pipe()
     try:
-        line_in = b"this is a line\r\n"
-        os.write(w, line_in)
-        line_out = read_line(fd=r)
+        os.write(write_fd, b"this is a line\r\n")
+        line_out = read_line(fd=read_fd)
         assert line_out == bytearray(b"this is a line")
     finally:
-        os.close(r)
-        os.close(w)
+        os.close(read_fd)
+        os.close(write_fd)
 
 
 def test_read_line_eof_before_newline() -> None:
-    r, w = os.pipe()
+    read_fd, write_fd = os.pipe()
     try:
-        line_in = b"this is a line"
-        os.write(w, line_in)
-        os.close(w)
-        line_out = read_line(fd=r)
+        os.write(write_fd, b"this is a line")
+        os.close(write_fd)
+        line_out = read_line(fd=read_fd)
         assert line_out == bytearray(b"this is a line")
     finally:
-        os.close(r)
+        os.close(read_fd)
 
 
 def test_read_line_eof_at_the_beginning() -> None:
-    r, w = os.pipe()
+    read_fd, write_fd = os.pipe()
     try:
-        os.close(w)
+        os.close(write_fd)
         with pytest.raises(EOFError):
-            read_line(fd=r)
+            read_line(fd=read_fd)
     finally:
-        os.close(r)
+        os.close(read_fd)
 
 
 def test_backend_output_with_unencodable_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

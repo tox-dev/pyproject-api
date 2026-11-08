@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import pickle  # ruff:ignore[suspicious-pickle-import]
+import pickle  # ruff:ignore[suspicious-pickle-import]  # tests that the exception survives pickling
 import re
-import subprocess  # ruff:ignore[suspicious-subprocess-import]
+import subprocess  # ruff:ignore[suspicious-subprocess-import]  # runs the frontend in a child process
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import get_context
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, Final, Literal
+from typing import TYPE_CHECKING, Final, Literal
 
 import pytest
 from packaging.requirements import Requirement
@@ -36,14 +36,12 @@ def local_builder(tmp_path: Path) -> Callable[[str], Path]:
 
 def test_missing_backend(local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("")
-    toml = tmp_path / "pyproject.toml"
-    toml.write_text('[build-system]\nrequires=[]\nbuild-backend = "build_tester"')
+    (tmp_path / "pyproject.toml").write_text('[build-system]\nrequires=[]\nbuild-backend = "build_tester"')
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
     with pytest.raises(BackendFailed) as context:
         frontend.build_wheel(tmp_path / "wheel")
     exc = context.value
-    assert exc.exc_type == "RuntimeError"
-    assert exc.code == 1
+    assert (exc.exc_type, exc.code) == ("RuntimeError", 1)
     assert "failed to start backend" in exc.err
     assert "ModuleNotFoundError: No module named " in exc.err
 
@@ -196,7 +194,7 @@ def test_interrupted_frontend_cleans_up_backend(
             return "demo-1.0-py3-none-any.whl"
         """)
     status_factory: Final = mocker.spy(_via_fresh_subprocess, "SubprocessCmdStatus")
-    mocker.patch("pyproject_api._frontend.sleep", side_effect=error_type("build interrupted"))
+    mocker.patch("pyproject_api._frontend.sleep", autospec=True, side_effect=error_type("build interrupted"))
 
     try:
         with pytest.raises(error_type):
@@ -210,7 +208,7 @@ def test_interrupted_frontend_cleans_up_backend(
         status.join(timeout=10)
 
 
-@pytest.mark.parametrize("cmd", ["build_wheel", "build_sdist"])
+@pytest.mark.parametrize("cmd", ["build_wheel", "build_sdist"], ids=["wheel", "sdist"])
 def test_missing_required_cmd(cmd: str, local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("")
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
@@ -271,28 +269,44 @@ def demo_pkg_inline() -> Path:
     return Path(__file__).absolute().parent / "demo_pkg_inline"
 
 
-@pytest.mark.parametrize("target", ["sdist", "wheel", "editable"])
-@pytest.mark.parametrize("relative", [True, False], ids=["relative", "absolute"])
+@pytest.mark.parametrize(
+    ("target", "attribute"),
+    [("sdist", "sdist"), ("wheel", "wheel"), ("editable", "wheel")],
+    ids=["sdist", "wheel", "editable"],
+)
+@pytest.mark.parametrize(
+    "directory_for",
+    [lambda _: Path("artifacts"), lambda tmp_path: tmp_path / "artifacts"],
+    ids=["relative", "absolute"],
+)
 def test_build_output_from_caller_directory(
-    target: str, relative: bool, tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch
+    target: str,
+    attribute: str,
+    directory_for: Callable[[Path], Path],
+    tmp_path: Path,
+    demo_pkg_inline: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(tmp_path)
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    directory = Path("artifacts") if relative else tmp_path / "artifacts"
+    directory = directory_for(tmp_path)
 
-    result = getattr(frontend, f"build_{target}")(directory)
-    artifact = getattr(result, "sdist" if target == "sdist" else "wheel")
+    artifact = getattr(getattr(frontend, f"build_{target}")(directory), attribute)
 
     assert artifact.parent == directory
     assert artifact.is_file()
     assert artifact.absolute().parent == tmp_path / "artifacts"
 
 
-@pytest.mark.parametrize("target", ["wheel", "editable"])
-@pytest.mark.parametrize("relative", [True, False], ids=["relative", "absolute"])
+@pytest.mark.parametrize("target", ["wheel", "editable"], ids=["wheel", "editable"])
+@pytest.mark.parametrize(
+    "directory_for",
+    [lambda _: Path("metadata"), lambda caller: caller / "metadata"],
+    ids=["relative", "absolute"],
+)
 def test_prepare_metadata_from_caller_directory(
     target: str,
-    relative: bool,
+    directory_for: Callable[[Path], Path],
     tmp_path: Path,
     local_builder: Callable[[str], Path],
     monkeypatch: pytest.MonkeyPatch,
@@ -312,7 +326,7 @@ def test_prepare_metadata_from_caller_directory(
     caller.mkdir()
     monkeypatch.chdir(caller)
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
-    directory = Path("metadata") if relative else caller / "metadata"
+    directory = directory_for(caller)
 
     result = getattr(frontend, f"prepare_metadata_for_build_{target}")(directory)
 
@@ -321,7 +335,7 @@ def test_prepare_metadata_from_caller_directory(
     assert (result.metadata / "METADATA").read_text() == "Name: demo\nVersion: 1.0\n"
 
 
-@pytest.mark.parametrize("target", ["wheel", "editable"])
+@pytest.mark.parametrize("target", ["wheel", "editable"], ids=["wheel", "editable"])
 def test_build_with_relative_metadata_directory(
     target: str,
     tmp_path: Path,
@@ -447,15 +461,14 @@ def test_backend_obj(tmp_path: Path, backend_obj: str) -> None:
     assert result.requires == (Requirement("a"),)
 
 
-@pytest.mark.parametrize("of_type", ["wheel", "sdist"])
+@pytest.mark.parametrize("of_type", ["wheel", "sdist"], ids=["wheel", "sdist"])
 def test_get_requires_for_build_missing(of_type: str, local_builder: Callable[[str], Path]) -> None:
-    tmp_path = local_builder("")
-    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(local_builder(""))[:-1])
     result = getattr(frontend, f"get_requires_for_build_{of_type}")()
     assert result.requires == ()
 
 
-@pytest.mark.parametrize("of_type", ["sdist", "wheel"])
+@pytest.mark.parametrize("of_type", ["sdist", "wheel"], ids=["sdist", "wheel"])
 def test_bad_return_type_get_requires_for_build(of_type: str, local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder(f"def get_requires_for_build_{of_type}(config_settings=None): return 1")
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
@@ -465,8 +478,7 @@ def test_bad_return_type_get_requires_for_build(of_type: str, local_builder: Cal
 
     exc = context.value
     msg = f"'get_requires_for_build_{of_type}' on 'build_tester' returned 1 but expected type 'list of string'"
-    assert exc.exc_msg == msg
-    assert exc.exc_type == "TypeError"
+    assert (exc.exc_msg, exc.exc_type) == (msg, "TypeError")
 
 
 def test_bad_return_type_build_sdist(local_builder: Callable[[str], Path]) -> None:
@@ -477,8 +489,10 @@ def test_bad_return_type_build_sdist(local_builder: Callable[[str], Path]) -> No
         frontend.build_sdist(tmp_path)
 
     exc = context.value
-    assert exc.exc_msg == f"'build_sdist' on 'build_tester' returned 1 but expected type {str!r}"
-    assert exc.exc_type == "TypeError"
+    assert (exc.exc_msg, exc.exc_type) == (
+        f"'build_sdist' on 'build_tester' returned 1 but expected type {str!r}",
+        "TypeError",
+    )
 
 
 def test_bad_return_type_build_wheel(local_builder: Callable[[str], Path]) -> None:
@@ -490,11 +504,13 @@ def test_bad_return_type_build_wheel(local_builder: Callable[[str], Path]) -> No
         frontend.build_wheel(tmp_path)
 
     exc = context.value
-    assert exc.exc_msg == f"'build_wheel' on 'build_tester' returned 1 but expected type {str!r}"
-    assert exc.exc_type == "TypeError"
+    assert (exc.exc_msg, exc.exc_type) == (
+        f"'build_wheel' on 'build_tester' returned 1 but expected type {str!r}",
+        "TypeError",
+    )
 
 
-@pytest.mark.parametrize("value", ["Path('demo.whl')", "b'demo.whl'", "{'demo.whl'}"])
+@pytest.mark.parametrize("value", ["Path('demo.whl')", "b'demo.whl'", "{'demo.whl'}"], ids=["path", "bytes", "set"])
 def test_non_serializable_hook_result(value: str, local_builder: Callable[[str], Path]) -> None:
     root = local_builder(f"""
         import sys
@@ -513,8 +529,7 @@ def test_non_serializable_hook_result(value: str, local_builder: Callable[[str],
         frontend.build_wheel(root / "dist")
 
     exc = context.value
-    assert exc.code == 1
-    assert exc.exc_type == "TypeError"
+    assert (exc.code, exc.exc_type) == (1, "TypeError")
     assert "not JSON serializable" in exc.exc_msg
     assert "hook stdout" in exc.out
     assert "hook stderr" in exc.err
@@ -531,8 +546,10 @@ def test_bad_return_type_prepare_metadata_for_build_wheel(local_builder: Callabl
         frontend.prepare_metadata_for_build_wheel(tmp_path / "meta")
 
     exc = context.value
-    assert exc.exc_type == "TypeError"
-    assert exc.exc_msg == f"'prepare_metadata_for_build_wheel' on 'build_tester' returned 1 but expected type {str!r}"
+    assert (exc.exc_type, exc.exc_msg) == (
+        "TypeError",
+        f"'prepare_metadata_for_build_wheel' on 'build_tester' returned 1 but expected type {str!r}",
+    )
 
 
 def test_prepare_metadata_for_build_wheel_meta_is_root(local_builder: Callable[[str], Path]) -> None:
@@ -545,9 +562,13 @@ def test_prepare_metadata_for_build_wheel_meta_is_root(local_builder: Callable[[
     assert str(context.value) == f"the project root and the metadata directory can't be the same {tmp_path}"
 
 
-@pytest.mark.parametrize("hook", ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"])
-@pytest.mark.parametrize("alias", [False, True], ids=["directory", "symlink"])
-def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, alias: bool) -> None:
+@pytest.mark.parametrize(
+    "hook",
+    ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"],
+    ids=["wheel", "editable"],
+)
+@pytest.mark.parametrize("metadata_name", ["sandbox", "alias"], ids=["directory", "symlink"])
+def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, metadata_name: str) -> None:
     # The old cleanup can remove the whole ancestor, so keep it inside tmp_path.
     ancestor: Final[Path] = tmp_path / "sandbox"
     root: Final[Path] = ancestor / "project"
@@ -556,9 +577,8 @@ def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, 
     source.write_text("source content\n")
     unrelated: Final[Path] = ancestor / "unrelated.txt"
     unrelated.write_text("keep me")
-    metadata_directory: Final[Path] = tmp_path / "alias" if alias else ancestor
-    if alias:
-        metadata_directory.symlink_to(ancestor, target_is_directory=True)
+    (tmp_path / "alias").symlink_to(ancestor, target_is_directory=True)
+    metadata_directory: Final[Path] = tmp_path / metadata_name
     frontend: Final[SubprocessFrontend] = SubprocessFrontend(root, (root,), "build_tester", None, ())
 
     with pytest.raises(RuntimeError, match="the metadata directory can't contain the project root"):
@@ -568,7 +588,11 @@ def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, 
     assert unrelated.read_text() == "keep me"
 
 
-@pytest.mark.parametrize("hook", ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"])
+@pytest.mark.parametrize(
+    "hook",
+    ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"],
+    ids=["wheel", "editable"],
+)
 def test_prepare_metadata_allows_sibling_directory(tmp_path: Path, hook: str) -> None:
     root: Final[Path] = tmp_path / "project"
     root.mkdir()
@@ -621,7 +645,7 @@ def test_no_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str]
         frontend.metadata_from_built(tmp_path, "wheel")
 
 
-@pytest.mark.parametrize("target", ["wheel", "editable"])
+@pytest.mark.parametrize("target", ["wheel", "editable"], ids=["wheel", "editable"])
 def test_metadata_from_built_wheel(
     demo_pkg_inline: Path,
     tmp_path: Path,
@@ -646,9 +670,11 @@ def test_metadata_from_built_removes_stale_files(
     (metadata / "entry_points.txt").write_text("obsolete entry points")
     (tmp_path / "unrelated.txt").write_text("keep")
 
-    metadata_path: Final[Path] = SubprocessFrontend(
-        *SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1]
-    ).metadata_from_built(tmp_path, target)[0]
+    metadata_path: Final[Path] = (
+        SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+        .metadata_from_built(tmp_path, target)
+        .metadata
+    )
 
     assert {entry.name for entry in metadata_path.iterdir()} == {"top_level.txt", "WHEEL", "RECORD", "METADATA"}
     assert (tmp_path / "unrelated.txt").read_text() == "keep"
@@ -665,9 +691,11 @@ def test_metadata_from_built_replaces_directory_symlink(
     output.mkdir()
     (output / "demo_pkg_inline-1.0.0.dist-info").symlink_to(external, target_is_directory=True)
 
-    metadata_path: Final[Path] = SubprocessFrontend(
-        *SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1]
-    ).metadata_from_built(output, "wheel")[0]
+    metadata_path: Final[Path] = (
+        SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+        .metadata_from_built(output, "wheel")
+        .metadata
+    )
 
     assert not metadata_path.is_symlink()
     assert (metadata_path / "METADATA").is_file()
@@ -697,10 +725,7 @@ def test_bad_wheel_metadata_from_built_wheel(local_builder: Callable[[str], Path
 def test_create_no_pyproject(tmp_path: Path) -> None:
     result = SubprocessFrontend.create_args_from_folder(tmp_path)
     assert len(result) == 6
-    assert result[0] == tmp_path
-    assert result[1] == ()
-    assert result[2] == "setuptools.build_meta"
-    assert result[3] == "__legacy__"
+    assert (result[0], result[1], result[2], result[3]) == (tmp_path, (), "setuptools.build_meta", "__legacy__")
     assert all(isinstance(i, Requirement) for i in result[4])
     assert [str(i) for i in result[4]] == ["setuptools>=40.8.0"]
     assert result[5] is True
@@ -737,8 +762,10 @@ def test_backend_get_requires_for_build_editable_bad(demo_pkg_inline: Path, monk
     assert not exc.err
     assert " get_requires_for_build_editable " in exc.out
     assert not exc.args
-    assert exc.exc_type == "TypeError"
-    assert exc.exc_msg == "'get_requires_for_build_editable' on 'build' returned [1] but expected type 'list of string'"
+    assert (exc.exc_type, exc.exc_msg) == (
+        "TypeError",
+        "'get_requires_for_build_editable' on 'build' returned [1] but expected type 'list of string'",
+    )
 
 
 def test_backend_prepare_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -772,8 +799,10 @@ def test_backend_prepare_editable_bad(tmp_path: Path, demo_pkg_inline: Path, mon
     assert not exc.err
     assert " prepare_metadata_for_build_editable " in exc.out
     assert not exc.args
-    assert exc.exc_type == "TypeError"
-    assert exc.exc_msg == "'prepare_metadata_for_build_editable' on 'build' returned 1 but expected type <class 'str'>"
+    assert (exc.exc_type, exc.exc_msg) == (
+        "TypeError",
+        "'prepare_metadata_for_build_editable' on 'build' returned 1 but expected type <class 'str'>",
+    )
 
 
 def test_backend_build_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -793,8 +822,7 @@ def test_backend_build_editable(tmp_path: Path, demo_pkg_inline: Path, monkeypat
 
 
 def test_backend_build_wheel(tmp_path: Path, demo_pkg_inline: Path) -> None:
-    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-    result = frontend.build_wheel(tmp_path)
+    result = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1]).build_wheel(tmp_path)
     assert result.wheel.name == "demo_pkg_inline-1.0.0-py3-none-any.whl"
     assert " build_wheel " in result.out
     assert not result.err
@@ -810,8 +838,10 @@ def test_backend_build_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monke
     assert not exc.err
     assert " build_editable " in exc.out
     assert not exc.args
-    assert exc.exc_type == "TypeError"
-    assert exc.exc_msg == "'build_editable' on 'build' returned 1 but expected type <class 'str'>"
+    assert (exc.exc_type, exc.exc_msg) == (
+        "TypeError",
+        "'build_editable' on 'build' returned 1 but expected type <class 'str'>",
+    )
 
 
 def test_backend_failed_str_repr() -> None:
@@ -824,9 +854,7 @@ def test_backend_failed_str_repr() -> None:
     assert exc.code is None
 
     exc = BackendFailed({}, "", "")
-    assert exc.code == -2
-    assert exc.exc_type == "missing Exception type"
-    assert exc.exc_msg == "missing Exception message"
+    assert (exc.code, exc.exc_type, exc.exc_msg) == (-2, "missing Exception type", "missing Exception message")
     assert str(exc) == "packaging backend failed (code=-2), with missing Exception type: missing Exception message"
 
     exc = BackendFailed({"code": 2, "exc_type": "RuntimeError", "exc_msg": "line1\nline2"}, "", "")
@@ -837,11 +865,15 @@ def test_backend_failed_str_repr() -> None:
 
 
 @pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL + 1))
-@pytest.mark.parametrize("result", [{}, {"code": None}, {"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}])
-def test_backend_failed_pickle(protocol: int, result: dict[str, Any]) -> None:
+@pytest.mark.parametrize(
+    "result",
+    [{}, {"code": None}, {"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}],
+    ids=["empty", "no-code", "typed"],
+)
+def test_backend_failed_pickle(protocol: int, result: dict[str, int | str | None]) -> None:
     exc = BackendFailed(result, "backend stdout", "backend stderr")
     exc.add_note("building a wheel")
-    restored = pickle.loads(  # ruff:ignore[suspicious-pickle-usage]
+    restored = pickle.loads(  # ruff:ignore[suspicious-pickle-usage]  # round-trips the exception through pickle
         pickle.dumps(exc, protocol=protocol)
     )
 
@@ -850,11 +882,6 @@ def test_backend_failed_pickle(protocol: int, result: dict[str, Any]) -> None:
     assert restored.__dict__ == exc.__dict__
     assert str(restored) == str(exc)
     assert repr(restored) == repr(exc)
-
-
-def _build_wheel_in_process(root: Path) -> str:
-    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
-    return str(frontend.build_wheel(root / "dist").wheel)
 
 
 def test_backend_failed_process_pool(local_builder: Callable[[str], Path]) -> None:
@@ -871,9 +898,11 @@ def test_backend_failed_process_pool(local_builder: Callable[[str], Path]) -> No
         with pytest.raises(BackendFailed) as context:
             future.result(timeout=30)
     exc = context.value
-    assert exc.args == ()
-    assert exc.code == 1
-    assert exc.exc_type == "RuntimeError"
-    assert exc.exc_msg == "build failed"
+    assert (exc.args, exc.code, exc.exc_type, exc.exc_msg) == ((), 1, "RuntimeError", "build failed")
     assert "backend stdout" in exc.out
     assert "backend stderr" in exc.err
+
+
+def _build_wheel_in_process(root: Path) -> str:
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1])
+    return str(frontend.build_wheel(root / "dist").wheel)
