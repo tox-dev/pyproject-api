@@ -89,7 +89,11 @@ class SubprocessFrontend(Frontend):
             process.kill()
             status.join()
 
-    def send_cmd(self, cmd: str, **kwargs: Any) -> tuple[JsonValue, str, str]:
+    def send_cmd(
+        self,
+        cmd: str,
+        **kwargs: Any,  # simplint: ignore[SMP602]  # send_cmd is a generic transport for any backend command
+    ) -> tuple[JsonValue, str, str]:
         """
         Send a command to the backend.
 
