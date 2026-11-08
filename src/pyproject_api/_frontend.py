@@ -236,7 +236,7 @@ class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name
         #: the string representation of the exception thrown
         self.exc_msg: str = result.get("exc_msg", "missing Exception message")
 
-    def __reduce__(self) -> tuple[type[BackendFailed], tuple[dict[str, JsonValue], str, str], dict[str, Any]]:
+    def __reduce__(self) -> tuple[type[BackendFailed], tuple[dict[str, JsonValue], str, str], dict[str, JsonValue]]:
         result: dict[str, JsonValue] = {"code": self.code, "exc_type": self.exc_type, "exc_msg": self.exc_msg}
         return self.__class__, (result, self.out, self.err), self.__dict__
 
@@ -377,7 +377,7 @@ class Frontend(ABC):
             self._optional_hooks = cast("OptionalHooks", result)
         return self._optional_hooks
 
-    def _send(self, cmd: str, **kwargs: Any) -> _SendResult:
+    def _send(self, cmd: str, **kwargs: Path | ConfigSettings) -> _SendResult:
         with NamedTemporaryFile(prefix=f"pep517_{cmd}-") as result_file_marker:
             result_file = Path(result_file_marker.name).with_suffix(".json")
             msg = json.dumps(
