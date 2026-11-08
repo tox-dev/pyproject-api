@@ -19,6 +19,7 @@ from ._frontend import (
     WheelResult,
 )
 from ._version import __version__
+from ._version import version as version
 from ._via_fresh_subprocess import SubprocessFrontend
 
 __all__ = [
