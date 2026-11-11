@@ -13,9 +13,11 @@ from typing import TYPE_CHECKING, Final, Literal
 import pytest
 from packaging.requirements import Requirement
 
-from pyproject_api import _via_fresh_subprocess
-from pyproject_api._frontend import BackendFailed
-from pyproject_api._via_fresh_subprocess import SubprocessFrontend
+from pyproject_api import (
+    BackendFailed,
+    SubprocessFrontend,
+    _via_fresh_subprocess,  # simplint: ignore[private-import-path]  # spy checks backend thread cleanup
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -826,6 +828,17 @@ def test_backend_build_wheel(tmp_path: Path, demo_pkg_inline: Path) -> None:
     assert result.wheel.name == "demo_pkg_inline-1.0.0-py3-none-any.whl"
     assert " build_wheel " in result.out
     assert not result.err
+
+
+def test_backend_build_wheel_with_only_directory(tmp_path: Path, demo_pkg_inline: Path) -> None:
+    frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
+    filename, _, err = frontend.send_cmd("build_wheel", wheel_directory=str(tmp_path))
+
+    assert (filename, (tmp_path / str(filename)).is_file(), err) == (
+        "demo_pkg_inline-1.0.0-py3-none-any.whl",
+        True,
+        "",
+    )
 
 
 def test_backend_build_editable_bad(tmp_path: Path, demo_pkg_inline: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -9,15 +9,13 @@ from typing import TYPE_CHECKING, Final
 
 import pytest
 
-from pyproject_api import SubprocessFrontend, _backend
+from pyproject_api import SubprocessFrontend
 from pyproject_api._backend import BackendProxy, read_line, run
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     import pytest_mock
-
-    from pyproject_api._frontend import JsonValue
 
 
 def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
@@ -104,7 +102,7 @@ def test_reuse_process(mocker: pytest_mock.MockerFixture, capsys: pytest.Capture
         json.dumps({"cmd": "_exit", "kwargs": {}, "result": results[3]}),
     ]
 
-    def fake_backend(name: str, *args: JsonValue, **kwargs: JsonValue) -> JsonValue:  # ruff:ignore[unused-function-argument]  # the fake backend accepts any call
+    def fake_backend(name: str, **_kwargs: str) -> str:
         if name == "dummy_command_b":
             raise SystemExit(2)
 
@@ -167,7 +165,7 @@ def test_reused_process_non_serializable_exit(tmp_path: Path, code: str, failure
         json.dumps({**request, "result": str(path)}) for request, path in zip(requests, result_files, strict=True)
     ]
     completed = subprocess.run(
-        [sys.executable, _backend.__file__, "True", "exit_backend"],
+        [sys.executable, "-m", "pyproject_api._backend", "True", "exit_backend"],
         input="".join(f"{message}\n" for message in messages),
         capture_output=True,
         text=True,

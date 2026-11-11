@@ -92,7 +92,7 @@ class SubprocessFrontend(Frontend):
     def send_cmd(
         self,
         cmd: str,
-        **kwargs: Any,  # simplint: ignore[SMP602]  # send_cmd is a generic transport for any backend command
+        **kwargs: Any,  # simplint: ignore[imprecise-annotation]  # generic backend command transport
     ) -> tuple[JsonValue, str, str]:
         """
         Send a command to the backend.
