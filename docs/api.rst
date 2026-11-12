@@ -70,14 +70,6 @@ Wheel
 ~~~~~
 .. autoclass:: WheelResult
 
-Frontend arguments
-~~~~~~~~~~~~~~~~~~
-.. autoclass:: FrontendArgs
-
-Built metadata
-~~~~~~~~~~~~~~
-.. autoclass:: BuiltMetadata
-
 Fresh subprocess frontend
 -------------------------
 .. autoclass:: SubprocessFrontend

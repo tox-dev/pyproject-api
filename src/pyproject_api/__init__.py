@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from ._frontend import (
     BackendFailed,
-    BuiltMetadata,
     CmdStatus,
     EditableResult,
     Frontend,
-    FrontendArgs,
     MetadataForBuildEditableResult,
     MetadataForBuildWheelResult,
     OptionalHooks,
@@ -24,11 +22,9 @@ from ._via_fresh_subprocess import SubprocessFrontend
 
 __all__ = [
     "BackendFailed",
-    "BuiltMetadata",
     "CmdStatus",
     "EditableResult",
     "Frontend",
-    "FrontendArgs",
     "MetadataForBuildEditableResult",
     "MetadataForBuildWheelResult",
     "OptionalHooks",

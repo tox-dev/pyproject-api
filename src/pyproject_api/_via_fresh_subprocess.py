@@ -15,8 +15,6 @@ if TYPE_CHECKING:
 
     from packaging.requirements import Requirement
 
-    from ._frontend import JsonValue
-
 
 class SubprocessCmdStatus(CmdStatus, Thread):
     def __init__(self, process: Popen[str], msg: str | None = None) -> None:
@@ -93,7 +91,7 @@ class SubprocessFrontend(Frontend):
         self,
         cmd: str,
         **kwargs: Any,  # simplint: ignore[imprecise-annotation]  # generic backend command transport
-    ) -> tuple[JsonValue, str, str]:
+    ) -> tuple[Any, str, str]:  # simplint: ignore[imprecise-annotation]  # public transport type
         """
         Send a command to the backend.
 
