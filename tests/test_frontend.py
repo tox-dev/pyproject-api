@@ -656,7 +656,9 @@ def test_metadata_from_built_wheel(
 ) -> None:
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
     monkeypatch.chdir(tmp_path)
-    path, out, err = frontend.metadata_from_built(tmp_path, target)
+    result = frontend.metadata_from_built(tmp_path, target)
+    assert type(result) is tuple
+    path, out, err = result
     assert path == tmp_path / "demo_pkg_inline-1.0.0.dist-info"
     assert {p.name for p in path.iterdir()} == {"top_level.txt", "WHEEL", "RECORD", "METADATA"}
     assert f" build_{target}" in out
@@ -672,11 +674,9 @@ def test_metadata_from_built_removes_stale_files(
     (metadata / "entry_points.txt").write_text("obsolete entry points")
     (tmp_path / "unrelated.txt").write_text("keep")
 
-    metadata_path: Final[Path] = (
-        SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-        .metadata_from_built(tmp_path, target)
-        .metadata
-    )
+    metadata_path, _, _ = SubprocessFrontend(
+        *SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1]
+    ).metadata_from_built(tmp_path, target)
 
     assert {entry.name for entry in metadata_path.iterdir()} == {"top_level.txt", "WHEEL", "RECORD", "METADATA"}
     assert (tmp_path / "unrelated.txt").read_text() == "keep"
@@ -693,11 +693,9 @@ def test_metadata_from_built_replaces_directory_symlink(
     output.mkdir()
     (output / "demo_pkg_inline-1.0.0.dist-info").symlink_to(external, target_is_directory=True)
 
-    metadata_path: Final[Path] = (
-        SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1])
-        .metadata_from_built(output, "wheel")
-        .metadata
-    )
+    metadata_path, _, _ = SubprocessFrontend(
+        *SubprocessFrontend.create_args_from_folder(demo_pkg_inline)[:-1]
+    ).metadata_from_built(output, "wheel")
 
     assert not metadata_path.is_symlink()
     assert (metadata_path / "METADATA").is_file()
@@ -726,6 +724,7 @@ def test_bad_wheel_metadata_from_built_wheel(local_builder: Callable[[str], Path
 
 def test_create_no_pyproject(tmp_path: Path) -> None:
     result = SubprocessFrontend.create_args_from_folder(tmp_path)
+    assert type(result) is tuple
     assert len(result) == 6
     assert (result[0], result[1], result[2], result[3]) == (tmp_path, (), "setuptools.build_meta", "__legacy__")
     assert all(isinstance(i, Requirement) for i in result[4])
