@@ -132,16 +132,16 @@ lint.ignore = [
   "DOC",                                       # no restructuredtext support
   "hardcoded-bind-all-interfaces",             # Possible binding to all interface
   "implicit-namespace-package",                # no implicit namespaces here
-  "incorrect-blank-line-before-class",         # `one-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible
+  "incorrect-blank-line-before-class",         # Conflicts with `blank-line-before-class`
   "missing-trailing-comma",                    # Conflict with formatter
-  "multi-line-summary-first-line",             # `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible
+  "multi-line-summary-first-line",             # Conflicts with `multi-line-summary-second-line`
   "single-line-implicit-string-concatenation", # Conflict with formatter
-  "undocumented-magic-method",                 # undocumented-public-api (simplint SMP903) covers the public API instead
-  "undocumented-public-class",                 # undocumented-public-api (simplint SMP903) covers the public API instead
-  "undocumented-public-function",              # undocumented-public-api (simplint SMP903) covers the public API instead
-  "undocumented-public-init",                  # undocumented-public-api (simplint SMP903) covers the public API instead
-  "undocumented-public-method",                # undocumented-public-api (simplint SMP903) covers the public API instead
-  "undocumented-public-nested-class",          # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-magic-method",                 # undocumented-public-api (simplint) covers the public API instead
+  "undocumented-public-class",                 # undocumented-public-api (simplint) covers the public API instead
+  "undocumented-public-function",              # undocumented-public-api (simplint) covers the public API instead
+  "undocumented-public-init",                  # undocumented-public-api (simplint) covers the public API instead
+  "undocumented-public-method",                # undocumented-public-api (simplint) covers the public API instead
+  "undocumented-public-nested-class",          # undocumented-public-api (simplint) covers the public API instead
 ]
 lint.per-file-ignores."src/pyproject_api/_backend.py" = [
   "ANN",
@@ -230,8 +230,8 @@ uploaded-prior-to = "P7D"
 decision-order = "stable"
 matrix.python = ">=3.15,<3.16"
 matrix.platforms = [ "linux_x86_64" ]
-# release-creator 4.4.0 needs a seven-day cutoff exception.
-# expires 2026-11-09
+# The 2026-11-03 lock still needs release-creator 4.4.0's cutoff exception.
+# expires 2026-11-18
 packages.release-creator.uploaded-prior-to = 2026-11-02T21:45:00Z
 # python-sbom 0.1.2 needs a seven-day cutoff exception.
 # expires 2026-11-15

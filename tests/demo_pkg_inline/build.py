@@ -102,8 +102,8 @@ def build_editable(
 
 def build_wheel(
     wheel_directory: str,
-    metadata_directory: str | None,
-    config_settings: dict[str, str] | None,  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
+    metadata_directory: str | None = None,
+    config_settings: dict[str, str] | None = None,  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
 ) -> str:
     base_name = f"{_NAME}-{_VERSION}-py{sys.version_info[0]}-none-any.whl"
     path = Path(wheel_directory) / base_name

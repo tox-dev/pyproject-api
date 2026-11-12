@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 import pyproject_api.__main__
-from pyproject_api._frontend import EditableResult, SdistResult, WheelResult
+from pyproject_api import EditableResult, SdistResult, WheelResult
 
 if TYPE_CHECKING:
     import pytest_mock

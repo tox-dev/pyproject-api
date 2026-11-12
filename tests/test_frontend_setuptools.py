@@ -6,21 +6,19 @@ from typing import TYPE_CHECKING, NamedTuple
 
 import pytest
 
-from pyproject_api._frontend import BackendFailed
-from pyproject_api._via_fresh_subprocess import SubprocessFrontend
+from pyproject_api import BackendFailed, SubprocessFrontend
 
 if TYPE_CHECKING:
     from collections.abc import Generator
     from pathlib import Path
 
-    from _pytest.tmpdir import TempPathFactory
     from pytest_mock import MockerFixture
 
 from importlib.metadata import Distribution, EntryPoint
 
 
 @pytest.fixture(scope="session")
-def frontend_setuptools(tmp_path_factory: TempPathFactory) -> SubprocessFrontend:
+def frontend_setuptools(tmp_path_factory: pytest.TempPathFactory) -> SubprocessFrontend:
     prj = tmp_path_factory.mktemp("proj")
     (prj / "pyproject.toml").write_text(
         '[build-system]\nrequires=["setuptools","wheel"]\nbuild-backend = "setuptools.build_meta"',

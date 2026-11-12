@@ -92,7 +92,7 @@ def main(argv: list[str]) -> None:
 
 __all__ = [
     "main",
-    "main_parser",  # simplint: ignore[SMP402]  # the CLI parser is public API, importable from this module
+    "main_parser",  # simplint: ignore[unused-export]  # the CLI parser is public API, importable from this module
 ]
 
 
