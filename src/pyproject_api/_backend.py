@@ -13,11 +13,11 @@ import sys
 import traceback
 
 
-class MissingCommand(TypeError):  # ruff:ignore[error-suffix-on-exception-name]  # the frontend reports it by this name
+class MissingCommand(TypeError):  # ruff:ignore[error-suffix-on-exception-name]  # the frontend reports it by this name  # simplint: ignore[missing-from-all]  # backend-only exception
     ...
 
 
-class BackendProxy:
+class BackendProxy:  # simplint: ignore[missing-from-all]  # backend-only proxy
     def __init__(self, backend_module, backend_obj):
         self.backend_module = backend_module
         self.backend_object = backend_obj
@@ -54,12 +54,12 @@ class BackendProxy:
         }
 
 
-def flush():
+def flush():  # simplint: ignore[missing-from-all]  # backend-only output helper
     sys.stderr.flush()
     sys.stdout.flush()
 
 
-def run(argv):
+def run(argv):  # simplint: ignore[missing-from-all]  # backend script entry point
     reuse_process = argv[0].lower() == "true"
     try:
         backend_proxy = BackendProxy(argv[1], None if len(argv) == 2 else argv[2])  # ruff:ignore[magic-value-comparison]  # argv may omit the backend object
@@ -141,7 +141,7 @@ def _write_response(result_file, result, response):
         flush()  # pragma: no branch # the finally runs on every path
 
 
-def read_line(fd=0):
+def read_line(fd=0):  # simplint: ignore[missing-from-all]  # backend-only input helper
     # for some reason input() seems to break (hangs forever) so instead we read byte by byte the unbuffered stream
     content = bytearray()
     while True:
@@ -156,15 +156,6 @@ def read_line(fd=0):
         if char != b"\r":
             content += char
     return content
-
-
-__all__ = [
-    "BackendProxy",
-    "MissingCommand",
-    "flush",
-    "read_line",
-    "run",
-]
 
 
 if __name__ == "__main__":
