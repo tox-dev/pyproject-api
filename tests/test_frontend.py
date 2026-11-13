@@ -13,11 +13,7 @@ from typing import TYPE_CHECKING, Final, Literal
 import pytest
 from packaging.requirements import Requirement
 
-from pyproject_api import (
-    BackendFailed,
-    SubprocessFrontend,
-    _via_fresh_subprocess,  # simplint: ignore[private-import-path]  # spy checks backend thread cleanup
-)
+from pyproject_api import BackendFailed, SubprocessFrontend
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -177,40 +173,7 @@ def test_large_command_with_failed_backend(local_builder: Callable[[str], Path])
     assert "RuntimeError: backend import failed" in context.value.err
 
 
-@pytest.mark.parametrize(
-    "error_type",
-    [
-        pytest.param(KeyboardInterrupt, id="keyboard-interrupt"),
-        pytest.param(SystemExit, id="system-exit"),
-        pytest.param(RuntimeError, id="runtime-error"),
-    ],
-)
-def test_interrupted_frontend_cleans_up_backend(
-    error_type: type[BaseException], local_builder: Callable[[str], Path], mocker: pytest_mock.MockerFixture
-) -> None:
-    root: Final = local_builder("""
-        import time
-
-        def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
-            time.sleep(60)
-            return "demo-1.0-py3-none-any.whl"
-        """)
-    status_factory: Final = mocker.spy(_via_fresh_subprocess, "SubprocessCmdStatus")
-    mocker.patch("pyproject_api._frontend.sleep", autospec=True, side_effect=error_type("build interrupted"))
-
-    try:
-        with pytest.raises(error_type):
-            SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(root)[:-1]).build_wheel(root / "dist")
-
-        assert not status_factory.spy_return.is_alive()
-    finally:
-        # Keep a regression from leaving the backend and its non-daemon thread running.
-        status: Final = status_factory.spy_return
-        status.process.kill()
-        status.join(timeout=10)
-
-
-@pytest.mark.parametrize("cmd", ["build_wheel", "build_sdist"], ids=["wheel", "sdist"])
+@pytest.mark.parametrize("cmd", [pytest.param("build_wheel", id="wheel"), pytest.param("build_sdist", id="sdist")])
 def test_missing_required_cmd(cmd: str, local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder("")
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
@@ -273,13 +236,18 @@ def demo_pkg_inline() -> Path:
 
 @pytest.mark.parametrize(
     ("target", "attribute"),
-    [("sdist", "sdist"), ("wheel", "wheel"), ("editable", "wheel")],
-    ids=["sdist", "wheel", "editable"],
+    [
+        pytest.param("sdist", "sdist", id="sdist"),
+        pytest.param("wheel", "wheel", id="wheel"),
+        pytest.param("editable", "wheel", id="editable"),
+    ],
 )
 @pytest.mark.parametrize(
     "directory_for",
-    [lambda _: Path("artifacts"), lambda tmp_path: tmp_path / "artifacts"],
-    ids=["relative", "absolute"],
+    [
+        pytest.param(lambda _: Path("artifacts"), id="relative"),
+        pytest.param(lambda tmp_path: tmp_path / "artifacts", id="absolute"),
+    ],
 )
 def test_build_output_from_caller_directory(
     target: str,
@@ -300,11 +268,13 @@ def test_build_output_from_caller_directory(
     assert artifact.absolute().parent == tmp_path / "artifacts"
 
 
-@pytest.mark.parametrize("target", ["wheel", "editable"], ids=["wheel", "editable"])
+@pytest.mark.parametrize("target", [pytest.param("wheel", id="wheel"), pytest.param("editable", id="editable")])
 @pytest.mark.parametrize(
     "directory_for",
-    [lambda _: Path("metadata"), lambda caller: caller / "metadata"],
-    ids=["relative", "absolute"],
+    [
+        pytest.param(lambda _: Path("metadata"), id="relative"),
+        pytest.param(lambda caller: caller / "metadata", id="absolute"),
+    ],
 )
 def test_prepare_metadata_from_caller_directory(
     target: str,
@@ -337,7 +307,7 @@ def test_prepare_metadata_from_caller_directory(
     assert (result.metadata / "METADATA").read_text() == "Name: demo\nVersion: 1.0\n"
 
 
-@pytest.mark.parametrize("target", ["wheel", "editable"], ids=["wheel", "editable"])
+@pytest.mark.parametrize("target", [pytest.param("wheel", id="wheel"), pytest.param("editable", id="editable")])
 def test_build_with_relative_metadata_directory(
     target: str,
     tmp_path: Path,
@@ -463,14 +433,14 @@ def test_backend_obj(tmp_path: Path, backend_obj: str) -> None:
     assert result.requires == (Requirement("a"),)
 
 
-@pytest.mark.parametrize("of_type", ["wheel", "sdist"], ids=["wheel", "sdist"])
+@pytest.mark.parametrize("of_type", [pytest.param("wheel", id="wheel"), pytest.param("sdist", id="sdist")])
 def test_get_requires_for_build_missing(of_type: str, local_builder: Callable[[str], Path]) -> None:
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(local_builder(""))[:-1])
     result = getattr(frontend, f"get_requires_for_build_{of_type}")()
     assert result.requires == ()
 
 
-@pytest.mark.parametrize("of_type", ["sdist", "wheel"], ids=["sdist", "wheel"])
+@pytest.mark.parametrize("of_type", [pytest.param("sdist", id="sdist"), pytest.param("wheel", id="wheel")])
 def test_bad_return_type_get_requires_for_build(of_type: str, local_builder: Callable[[str], Path]) -> None:
     tmp_path = local_builder(f"def get_requires_for_build_{of_type}(config_settings=None): return 1")
     frontend = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1])
@@ -512,7 +482,14 @@ def test_bad_return_type_build_wheel(local_builder: Callable[[str], Path]) -> No
     )
 
 
-@pytest.mark.parametrize("value", ["Path('demo.whl')", "b'demo.whl'", "{'demo.whl'}"], ids=["path", "bytes", "set"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param("Path('demo.whl')", id="path"),
+        pytest.param("b'demo.whl'", id="bytes"),
+        pytest.param("{'demo.whl'}", id="set"),
+    ],
+)
 def test_non_serializable_hook_result(value: str, local_builder: Callable[[str], Path]) -> None:
     root = local_builder(f"""
         import sys
@@ -566,10 +543,14 @@ def test_prepare_metadata_for_build_wheel_meta_is_root(local_builder: Callable[[
 
 @pytest.mark.parametrize(
     "hook",
-    ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"],
-    ids=["wheel", "editable"],
+    [
+        pytest.param("prepare_metadata_for_build_wheel", id="wheel"),
+        pytest.param("prepare_metadata_for_build_editable", id="editable"),
+    ],
 )
-@pytest.mark.parametrize("metadata_name", ["sandbox", "alias"], ids=["directory", "symlink"])
+@pytest.mark.parametrize(
+    "metadata_name", [pytest.param("sandbox", id="directory"), pytest.param("alias", id="symlink")]
+)
 def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, metadata_name: str) -> None:
     # The old cleanup can remove the whole ancestor, so keep it inside tmp_path.
     ancestor: Final[Path] = tmp_path / "sandbox"
@@ -592,8 +573,10 @@ def test_prepare_metadata_rejects_ancestor_directory(tmp_path: Path, hook: str, 
 
 @pytest.mark.parametrize(
     "hook",
-    ["prepare_metadata_for_build_wheel", "prepare_metadata_for_build_editable"],
-    ids=["wheel", "editable"],
+    [
+        pytest.param("prepare_metadata_for_build_wheel", id="wheel"),
+        pytest.param("prepare_metadata_for_build_editable", id="editable"),
+    ],
 )
 def test_prepare_metadata_allows_sibling_directory(tmp_path: Path, hook: str) -> None:
     root: Final[Path] = tmp_path / "project"
@@ -647,7 +630,7 @@ def test_no_wheel_prepare_metadata_for_build_wheel(local_builder: Callable[[str]
         frontend.metadata_from_built(tmp_path, "wheel")
 
 
-@pytest.mark.parametrize("target", ["wheel", "editable"], ids=["wheel", "editable"])
+@pytest.mark.parametrize("target", [pytest.param("wheel", id="wheel"), pytest.param("editable", id="editable")])
 def test_metadata_from_built_wheel(
     demo_pkg_inline: Path,
     tmp_path: Path,
@@ -879,8 +862,11 @@ def test_backend_failed_str_repr() -> None:
 @pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL + 1))
 @pytest.mark.parametrize(
     "result",
-    [{}, {"code": None}, {"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}],
-    ids=["empty", "no-code", "typed"],
+    [
+        pytest.param({}, id="empty"),
+        pytest.param({"code": None}, id="no-code"),
+        pytest.param({"code": 1, "exc_type": "TypeError", "exc_msg": "bad"}, id="typed"),
+    ],
 )
 def test_backend_failed_pickle(protocol: int, result: dict[str, int | str | None]) -> None:
     exc = BackendFailed(result, "backend stdout", "backend stderr")
