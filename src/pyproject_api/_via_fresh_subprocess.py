@@ -16,28 +16,6 @@ if TYPE_CHECKING:
     from packaging.requirements import Requirement
 
 
-class SubprocessCmdStatus(CmdStatus, Thread):  # simplint: ignore[unexported-public-name]  # internal worker status
-    def __init__(self, process: Popen[str], msg: str | None = None) -> None:
-        super().__init__()
-        self.process = process
-        self._msg = msg
-        self._out_err: tuple[str, str] | None = None
-        self.start()
-
-    @property
-    def done(self) -> bool:
-        # communicate() sets returncode before run() stores what it returned, so a caller polling the process can
-        # reach out_err() while it still holds None. Free-threaded builds land in that window; report the command
-        # finished only once its output is actually there.
-        return self._out_err is not None
-
-    def run(self) -> None:
-        self._out_err = self.process.communicate(input=self._msg)
-
-    def out_err(self) -> tuple[str, str]:
-        return cast("tuple[str, str]", self._out_err)
-
-
 class SubprocessFrontend(Frontend):
     """
     A frontend that creates fresh subprocess at every call to communicate with the backend.
@@ -100,6 +78,28 @@ class SubprocessFrontend(Frontend):
         :returns: a tuple of: backend response, standard output text, standard error text
         """
         return self._send(cmd, **kwargs)
+
+
+class SubprocessCmdStatus(CmdStatus, Thread):  # simplint: ignore[unexported-public-name]  # internal worker status
+    def __init__(self, process: Popen[str], msg: str | None = None) -> None:
+        super().__init__()
+        self.process = process
+        self._msg = msg
+        self._out_err: tuple[str, str] | None = None
+        self.start()
+
+    @property
+    def done(self) -> bool:
+        # communicate() sets returncode before run() stores what it returned, so a caller polling the process can
+        # reach out_err() while it still holds None. Free-threaded builds land in that window; report the command
+        # finished only once its output is actually there.
+        return self._out_err is not None
+
+    def run(self) -> None:
+        self._out_err = self.process.communicate(input=self._msg)
+
+    def out_err(self) -> tuple[str, str]:
+        return cast("tuple[str, str]", self._out_err)
 
 
 __all__ = [

@@ -68,170 +68,6 @@ class CmdStatus(ABC):
         raise NotImplementedError
 
 
-class RequiresBuildSdistResult(NamedTuple):
-    """
-    Information collected while acquiring the source distribution build dependencies.
-
-    :param requires: source distribution build dependencies
-    :param out: backend standard output while acquiring the source distribution build dependencies
-    :param err: backend standard error while acquiring the source distribution build dependencies
-    """
-
-    requires: tuple[Requirement, ...]
-    out: str
-    err: str
-
-
-class RequiresBuildWheelResult(NamedTuple):
-    """
-    Information collected while acquiring the wheel build dependencies.
-
-    :param requires: wheel build dependencies
-    :param out: backend standard output while acquiring the wheel build dependencies
-    :param err: backend standard error while acquiring the wheel build dependencies
-    """
-
-    requires: tuple[Requirement, ...]
-    out: str
-    err: str
-
-
-class RequiresBuildEditableResult(NamedTuple):
-    """
-    Information collected while acquiring the editable wheel build dependencies.
-
-    :param requires: editable wheel build dependencies
-    :param out: backend standard output while acquiring the editable wheel build dependencies
-    :param err: backend standard error while acquiring the editable wheel build dependencies
-    """
-
-    requires: tuple[Requirement, ...]
-    out: str
-    err: str
-
-
-class MetadataForBuildWheelResult(NamedTuple):
-    """
-    Information collected while acquiring the wheel metadata.
-
-    :param metadata: path to the wheel metadata
-    :param out: backend standard output while generating the wheel metadata
-    :param err: backend standard error while generating the wheel metadata
-    """
-
-    metadata: Path
-    out: str
-    err: str
-
-
-class MetadataForBuildEditableResult(NamedTuple):
-    """
-    Information collected while acquiring the editable metadata.
-
-    :param metadata: path to the wheel metadata
-    :param out: backend standard output while generating the editable wheel metadata
-    :param err: backend standard error while generating the editable wheel metadata
-    """
-
-    metadata: Path
-    out: str
-    err: str
-
-
-class SdistResult(NamedTuple):
-    """
-    Information collected while building a source distribution.
-
-    :param sdist: path to the built source distribution
-    :param out: backend standard output while building the source distribution
-    :param err: backend standard error while building the source distribution
-    """
-
-    sdist: Path
-    out: str
-    err: str
-
-
-class WheelResult(NamedTuple):
-    """
-    Information collected while building a wheel.
-
-    :param wheel: path to the built wheel artifact
-    :param out: backend standard output while building the wheel
-    :param err: backend standard error while building the wheel
-    """
-
-    wheel: Path
-    out: str
-    err: str
-
-
-class EditableResult(NamedTuple):
-    """
-    Information collected while building an editable wheel.
-
-    :param wheel: path to the built wheel artifact
-    :param out: backend standard output while building the wheel
-    :param err: backend standard error while building the wheel
-    """
-
-    wheel: Path
-    out: str
-    err: str
-
-
-class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name]  # public exception name, kept for users
-    """
-    An error of the build backend.
-
-    :param result: the backend response, with the ``code``, ``exc_type`` and ``exc_msg`` keys
-    :param out: standard output collected while running the command
-    :param err: standard error collected while running the command
-    """
-
-    def __init__(self, result: dict[str, Any], out: str, err: str) -> None:
-        super().__init__()
-        #: standard output collected while running the command
-        self.out = out
-        #: standard error collected while running the command
-        self.err = err
-        #: exit code of the command
-        self.code: int | None = result.get("code", -2)
-        #: the type of exception thrown
-        self.exc_type: str = result.get("exc_type", "missing Exception type")
-        #: the string representation of the exception thrown
-        self.exc_msg: str = result.get("exc_msg", "missing Exception message")
-
-    def __reduce__(
-        self,
-    ) -> tuple[
-        type[BackendFailed],
-        tuple[dict[str, Any], str, str],  # simplint: ignore[imprecise-annotation]  # public pickle type
-        dict[str, Any],  # simplint: ignore[imprecise-annotation]  # public pickle type
-    ]:
-        result: dict[str, JsonValue] = {"code": self.code, "exc_type": self.exc_type, "exc_msg": self.exc_msg}
-        return self.__class__, (result, self.out, self.err), self.__dict__
-
-    def __str__(self) -> str:
-        return (
-            f"packaging backend failed{'' if self.code is None else f' (code={self.code})'}, "
-            f"with {self.exc_type}: {self.exc_msg}\n{self.err}{self.out}"
-        ).rstrip()
-
-    def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}("
-            f"result=dict(code={self.code}, exc_type={self.exc_type!r},exc_msg={self.exc_msg!r}),"
-            f" out={self.out!r}, err={self.err!r})"
-        )
-
-
-class _SendResult(NamedTuple):
-    value: JsonValue
-    out: str
-    err: str
-
-
 class Frontend(ABC):
     """Abstract base class for a pyproject frontend."""
 
@@ -620,13 +456,6 @@ class Frontend(ABC):
             yield Path(wheel_directory)
 
 
-def _str_list(build_system: dict[str, _TomlValue], key: str) -> list[str]:
-    if not isinstance(value := build_system[key], list) or not all(isinstance(entry, str) for entry in value):
-        msg = f"build-system.{key} must be a list of strings, got {value!r}"
-        raise ValueError(msg)
-    return value
-
-
 def _in_tree_path(folder: Path, entry: str) -> Path:
     path = folder / entry
     # Python 3.15 on Windows resolves a path containing NUL instead of raising
@@ -638,6 +467,177 @@ def _in_tree_path(folder: Path, entry: str) -> Path:
         msg = f"build-system.backend-path entry {entry!r} must be a relative path inside the project {folder}"
         raise ValueError(msg)
     return path
+
+
+def _str_list(build_system: dict[str, _TomlValue], key: str) -> list[str]:
+    if not isinstance(value := build_system[key], list) or not all(isinstance(entry, str) for entry in value):
+        msg = f"build-system.{key} must be a list of strings, got {value!r}"
+        raise ValueError(msg)
+    return value
+
+
+class RequiresBuildSdistResult(NamedTuple):
+    """
+    Information collected while acquiring the source distribution build dependencies.
+
+    :param requires: source distribution build dependencies
+    :param out: backend standard output while acquiring the source distribution build dependencies
+    :param err: backend standard error while acquiring the source distribution build dependencies
+    """
+
+    requires: tuple[Requirement, ...]
+    out: str
+    err: str
+
+
+class _SendResult(NamedTuple):
+    value: JsonValue
+    out: str
+    err: str
+
+
+class BackendFailed(RuntimeError):  # ruff:ignore[error-suffix-on-exception-name]  # public exception name, kept for users
+    """
+    An error of the build backend.
+
+    :param result: the backend response, with the ``code``, ``exc_type`` and ``exc_msg`` keys
+    :param out: standard output collected while running the command
+    :param err: standard error collected while running the command
+    """
+
+    def __init__(self, result: dict[str, Any], out: str, err: str) -> None:
+        super().__init__()
+        #: standard output collected while running the command
+        self.out = out
+        #: standard error collected while running the command
+        self.err = err
+        #: exit code of the command
+        self.code: int | None = result.get("code", -2)
+        #: the type of exception thrown
+        self.exc_type: str = result.get("exc_type", "missing Exception type")
+        #: the string representation of the exception thrown
+        self.exc_msg: str = result.get("exc_msg", "missing Exception message")
+
+    def __reduce__(
+        self,
+    ) -> tuple[
+        type[BackendFailed],
+        tuple[dict[str, Any], str, str],  # simplint: ignore[imprecise-annotation]  # public pickle type
+        dict[str, Any],  # simplint: ignore[imprecise-annotation]  # public pickle type
+    ]:
+        result: dict[str, JsonValue] = {"code": self.code, "exc_type": self.exc_type, "exc_msg": self.exc_msg}
+        return self.__class__, (result, self.out, self.err), self.__dict__
+
+    def __str__(self) -> str:
+        return (
+            f"packaging backend failed{'' if self.code is None else f' (code={self.code})'}, "
+            f"with {self.exc_type}: {self.exc_msg}\n{self.err}{self.out}"
+        ).rstrip()
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"result=dict(code={self.code}, exc_type={self.exc_type!r},exc_msg={self.exc_msg!r}),"
+            f" out={self.out!r}, err={self.err!r})"
+        )
+
+
+class RequiresBuildWheelResult(NamedTuple):
+    """
+    Information collected while acquiring the wheel build dependencies.
+
+    :param requires: wheel build dependencies
+    :param out: backend standard output while acquiring the wheel build dependencies
+    :param err: backend standard error while acquiring the wheel build dependencies
+    """
+
+    requires: tuple[Requirement, ...]
+    out: str
+    err: str
+
+
+class RequiresBuildEditableResult(NamedTuple):
+    """
+    Information collected while acquiring the editable wheel build dependencies.
+
+    :param requires: editable wheel build dependencies
+    :param out: backend standard output while acquiring the editable wheel build dependencies
+    :param err: backend standard error while acquiring the editable wheel build dependencies
+    """
+
+    requires: tuple[Requirement, ...]
+    out: str
+    err: str
+
+
+class MetadataForBuildWheelResult(NamedTuple):
+    """
+    Information collected while acquiring the wheel metadata.
+
+    :param metadata: path to the wheel metadata
+    :param out: backend standard output while generating the wheel metadata
+    :param err: backend standard error while generating the wheel metadata
+    """
+
+    metadata: Path
+    out: str
+    err: str
+
+
+class MetadataForBuildEditableResult(NamedTuple):
+    """
+    Information collected while acquiring the editable metadata.
+
+    :param metadata: path to the wheel metadata
+    :param out: backend standard output while generating the editable wheel metadata
+    :param err: backend standard error while generating the editable wheel metadata
+    """
+
+    metadata: Path
+    out: str
+    err: str
+
+
+class SdistResult(NamedTuple):
+    """
+    Information collected while building a source distribution.
+
+    :param sdist: path to the built source distribution
+    :param out: backend standard output while building the source distribution
+    :param err: backend standard error while building the source distribution
+    """
+
+    sdist: Path
+    out: str
+    err: str
+
+
+class WheelResult(NamedTuple):
+    """
+    Information collected while building a wheel.
+
+    :param wheel: path to the built wheel artifact
+    :param out: backend standard output while building the wheel
+    :param err: backend standard error while building the wheel
+    """
+
+    wheel: Path
+    out: str
+    err: str
+
+
+class EditableResult(NamedTuple):
+    """
+    Information collected while building an editable wheel.
+
+    :param wheel: path to the built wheel artifact
+    :param out: backend standard output while building the wheel
+    :param err: backend standard error while building the wheel
+    """
+
+    wheel: Path
+    out: str
+    err: str
 
 
 __all__ = [
