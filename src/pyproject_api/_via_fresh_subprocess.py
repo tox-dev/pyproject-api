@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from packaging.requirements import Requirement
 
 
-class SubprocessCmdStatus(CmdStatus, Thread):
+class SubprocessCmdStatus(CmdStatus, Thread):  # simplint: ignore[unexported-public-name]  # internal worker status
     def __init__(self, process: Popen[str], msg: str | None = None) -> None:
         super().__init__()
         self.process = process

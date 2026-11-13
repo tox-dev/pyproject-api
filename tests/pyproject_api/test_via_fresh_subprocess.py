@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import sys
+import threading
+from subprocess import Popen  # ruff:ignore[suspicious-subprocess-import]  # inspect the spawned backend
 from textwrap import dedent
 from typing import TYPE_CHECKING, Final
 
 import pytest
 
 from pyproject_api import SubprocessFrontend
-from pyproject_api._via_fresh_subprocess import SubprocessCmdStatus
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -38,18 +40,19 @@ def test_interrupted_frontend_cleans_up_backend(
         """),
         encoding="utf-8",
     )
-    status_constructor: Final = mocker.spy(SubprocessCmdStatus, "__init__")
+    process_constructor: Final = mocker.spy(sys.modules[SubprocessFrontend.__module__], "Popen")
     mocker.patch("pyproject_api._frontend.sleep", autospec=True, side_effect=error_type("build interrupted"))
+    threads_before: Final = set(threading.enumerate())
 
+    with pytest.raises(error_type):
+        SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1]).build_wheel(tmp_path / "dist")
+
+    process: Final = process_constructor.spy_return
+    assert isinstance(process, Popen)
     try:
-        with pytest.raises(error_type):
-            SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(tmp_path)[:-1]).build_wheel(
-                tmp_path / "dist"
-            )
-
-        assert not status_constructor.call_args.args[0].is_alive()
+        assert process.poll() is not None
+        assert all(thread.daemon for thread in set(threading.enumerate()) - threads_before)
     finally:
         # A failed cleanup test must not leave a live child process.
-        status: Final = status_constructor.call_args.args[0]
-        status.process.kill()
-        status.join(timeout=10)
+        process.kill()
+        process.wait(timeout=10)

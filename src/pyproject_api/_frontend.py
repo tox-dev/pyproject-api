@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 _HERE: Final[Path] = Path(__file__).parent
-ConfigSettings = dict[str, Any] | None
+ConfigSettings = dict[str, Any] | None  # simplint: ignore[missing-from-all]  # used only in this module's annotations
 # the backend answers over a JSON protocol, so every value it returns is one of these
 JsonValue: TypeAlias = str | int | float | bool | list["JsonValue"] | dict[str, "JsonValue"] | None
 # tomllib yields these types for every value in a parsed document
@@ -643,7 +643,6 @@ def _in_tree_path(folder: Path, entry: str) -> Path:
 __all__ = [
     "BackendFailed",
     "CmdStatus",
-    "ConfigSettings",
     "EditableResult",
     "Frontend",
     "MetadataForBuildEditableResult",

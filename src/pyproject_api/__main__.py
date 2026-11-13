@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ._frontend import EditableResult, SdistResult, WheelResult
 
 
-def main_parser() -> argparse.ArgumentParser:
+def main_parser() -> argparse.ArgumentParser:  # simplint: ignore[unexported-public-name]  # CLI parser is internal
     parser = argparse.ArgumentParser(
         description=(
             "A pyproject.toml-based build frontend. "
@@ -61,7 +61,7 @@ def main_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str]) -> None:
+def main(argv: list[str]) -> None:  # simplint: ignore[unexported-public-name]  # CLI entry point is not library API
     args = main_parser().parse_args(argv)
 
     outdir = (args.outdir or args.srcdir / "dist").absolute()
@@ -88,12 +88,6 @@ def main(argv: list[str]) -> None:
         res = frontend.build_editable(outdir)
         print(res.out)  # ruff:ignore[print]  # CLI output for the user
         print(res.err, file=sys.stderr)  # ruff:ignore[print]  # CLI output for the user
-
-
-__all__ = [
-    "main",
-    "main_parser",  # simplint: ignore[unused-export]  # the CLI parser is public API, importable from this module
-]
 
 
 if __name__ == "__main__":
