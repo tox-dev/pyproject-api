@@ -5,6 +5,7 @@ import sys
 import tarfile
 from pathlib import Path
 from textwrap import dedent
+from types import MappingProxyType
 from typing import Final
 from zipfile import ZipFile
 
@@ -17,10 +18,10 @@ _LOGIC: Final[str] = f"{_NAME}/__init__.py"
 _METADATA_FILE: Final[str] = f"{_DIST_INFO}/METADATA"
 _WHEEL: Final[str] = f"{_DIST_INFO}/WHEEL"
 _RECORD: Final[str] = f"{_DIST_INFO}/RECORD"
-_CONTENT: Final[dict[str, str]] = {
+_CONTENT: Final[MappingProxyType[str, str]] = MappingProxyType({
     _LOGIC: f"def do():\n    print('greetings from {_NAME}')",
-}
-_METADATA: Final[dict[str, str]] = {
+})
+_METADATA: Final[MappingProxyType[str, str]] = MappingProxyType({
     _METADATA_FILE: f"""
         Metadata-Version: 2.1
         Name: {_PKG_NAME}
@@ -48,7 +49,7 @@ _METADATA: Final[dict[str, str]] = {
         {_DIST_INFO}/top_level.txt,,
         {_DIST_INFO}/RECORD,,
        """,
-}
+})
 
 
 def get_requires_for_build_wheel(config_settings: dict[str, str] | None = None) -> list[str]:  # ruff:ignore[unused-function-argument]  # the hook signature is fixed by PEP 517
