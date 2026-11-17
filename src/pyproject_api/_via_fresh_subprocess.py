@@ -47,7 +47,8 @@ class SubprocessFrontend(Frontend):
     def _send_msg(self, cmd: str, result_file: Path, msg: str) -> Generator[SubprocessCmdStatus, None, None]:  # ruff:ignore[unused-method-argument]  # mirrors the Frontend._send_msg signature
         env = os.environ.copy()
         if backend := os.pathsep.join(str(i) for i in self._backend_paths):
-            env["PYTHONPATH"] = backend
+            # backend-path goes first (PEP 517), but what the caller already put on PYTHONPATH must stay importable
+            env["PYTHONPATH"] = os.pathsep.join(filter(None, (backend, env.get("PYTHONPATH"))))
         process = Popen(  # ruff:ignore[subprocess-without-shell-equals-true]  # fixed argv, no shell
             args=[self.executable, *self.backend_args],
             stdout=PIPE,
