@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+__lazy_modules__ = ["subprocess"]
+
 import os
 import sys
 from contextlib import contextmanager
