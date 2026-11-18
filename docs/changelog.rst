@@ -5,6 +5,31 @@ Release History
 
 .. towncrier release notes start
 
+.. _release-1-12-6:
+
+v1.12.6 (2026-11-18)
+--------------------
+
+.. _release-1-12-6-fixed:
+
+Fixed
+^^^^^
+
+- Keep the caller's ``PYTHONPATH`` importable when ``SubprocessFrontend`` starts a backend that sets
+  ``build-system.backend-path``; the in-tree paths now come first instead of replacing it (:pr:`375`) by
+  :user:`HarshJamgaonkar05`.
+- Restore plain tuple results and public annotations for frontend creation and built metadata (:pr:`365`) by
+  :user:`gaborbernat`.
+
+.. _release-1-12-6-packaging:
+
+Packaging
+^^^^^^^^^
+
+- Every wheel now carries a `PEP 770 <https://peps.python.org/pep-0770/>`_ CycloneDX SBOM in its ``.dist-info/sboms``
+  directory, written at build time by `python-sbom <https://github.com/tox-dev/python-sbom>`_ (:pr:`362`) by
+  :user:`gaborbernat`.
+
 .. _release-1-12-5:
 
 v1.12.5 (2026-11-07)
