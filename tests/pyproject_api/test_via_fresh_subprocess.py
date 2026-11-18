@@ -56,3 +56,31 @@ def test_interrupted_frontend_cleans_up_backend(
         # A failed cleanup test must not leave a live child process.
         process.kill()
         process.wait(timeout=10)
+
+
+def test_backend_path_keeps_existing_pythonpath(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    deps: Final = tmp_path / "deps"
+    deps.mkdir()
+    (deps / "helper.py").write_text('NAME = "demo-1.0.tar.gz"\n', encoding="utf-8")
+    # same name as the in-tree backend, so it would shadow it if PYTHONPATH came before backend-path
+    (deps / "build_tester.py").write_text('raise ImportError("PYTHONPATH shadowed backend-path")\n', encoding="utf-8")
+    project: Final = tmp_path / "project"
+    (project / "_build").mkdir(parents=True)
+    (project / "pyproject.toml").write_text(
+        '[build-system]\nrequires=[]\nbuild-backend = "build_tester"\nbackend-path=["_build"]', encoding="utf-8"
+    )
+    (project / "_build" / "build_tester.py").write_text(
+        dedent("""\
+            import helper
+
+            def build_sdist(sdist_directory, config_settings=None):
+                return helper.NAME
+        """),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PYTHONPATH", str(deps))
+
+    frontend: Final = SubprocessFrontend(*SubprocessFrontend.create_args_from_folder(project)[:-1])
+    result: Final = frontend.build_sdist(tmp_path / "dist")
+
+    assert result.sdist == tmp_path / "dist" / "demo-1.0.tar.gz"
