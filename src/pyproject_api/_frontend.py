@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = [
+    "json",
+    "tempfile",
+    "tomllib",
+    "zipfile",
+    f"{__spec__.parent}._util",  # ty: ignore[unresolved-attribute]  # imported modules have a spec
+]
+
 import json
 import tomllib
 from abc import ABC, abstractmethod
