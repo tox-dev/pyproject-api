@@ -1,6 +1,10 @@
 from __future__ import annotations  # ruff:ignore[undocumented-public-module]  # entry point for python -m, not an importable API
 
-__lazy_modules__ = ["argparse", "pathlib", f"{__spec__.parent}._via_fresh_subprocess"]  # ty: ignore[unresolved-attribute]  # imported modules have a spec
+__lazy_modules__ = [
+    "argparse",
+    "pathlib",
+    f"{__spec__.parent}._via_fresh_subprocess",  # ty: ignore[unresolved-attribute]  # imported modules have a spec
+]
 
 import argparse
 import os
