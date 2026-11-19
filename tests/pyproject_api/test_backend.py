@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 
     import pytest_mock
 
+    from pyproject_api import SdistResult
+
 
 def test_invalid_module(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(ImportError):
@@ -230,6 +232,6 @@ def test_backend_output_with_unencodable_path(tmp_path: Path, monkeypatch: pytes
     root.mkdir()
     (root / "build_tester.py").write_text("def build_sdist(sdist_directory, config_settings=None): return 'out.tar.gz'")
 
-    result: Final = SubprocessFrontend(root, (root,), "build_tester", None, ()).build_sdist(root / "dist")
+    result: Final[SdistResult] = SubprocessFrontend(root, (root,), "build_tester", None, ()).build_sdist(root / "dist")
 
     assert (result.sdist, "pr\\xf6ject" in result.out) == (root / "dist" / "out.tar.gz", True)
