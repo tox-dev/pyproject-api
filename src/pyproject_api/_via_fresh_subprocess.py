@@ -61,7 +61,7 @@ class SubprocessFrontend(Frontend):
             cwd=self._root,
             env=env,
         )
-        status: Final = SubprocessCmdStatus(process, f"{os.linesep}{msg}{os.linesep}")
+        status: Final[SubprocessCmdStatus] = SubprocessCmdStatus(process, f"{os.linesep}{msg}{os.linesep}")
         try:
             yield status
         finally:
